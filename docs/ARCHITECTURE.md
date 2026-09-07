@@ -49,7 +49,7 @@ Primary sources checked:
 - https://www.prisma.io/docs/orm/reference/system-requirements
 - https://www.prisma.io/docs/orm/reference/supported-databases
 - https://dev.mysql.com/doc/refman/8.4/en/mysql-releases.html
-- https://hub.docker.com/_/mysql
+- https://dev.mysql.com/doc/refman/8.4/en/installing.html
 - https://nginx.org/en/download.html
 
 ## API and publication rules

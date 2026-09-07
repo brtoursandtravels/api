@@ -29,8 +29,6 @@ secret in this file.
 | Express                     |                   4000 |
 | Admin Vite                  |                   5173 |
 | MySQL                       |                   3306 |
-| Mailpit SMTP                |                   1025 |
-| Mailpit UI                  |                   8025 |
 
 Session TTL, CSRF TTL, reset-token TTL, media URL/size limits and optional SMTP
 authentication are API-only values. Local media defaults to

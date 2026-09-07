@@ -75,11 +75,10 @@
 
 ## Phase 6 â€” deployment handoff
 
-- [x] Three scoped Dockerfiles and build-context exclusions.
-- [x] Production Compose topology with private MySQL, API, worker, frontend,
-      admin, TLS reverse proxy, health checks and persistent storage.
+- [x] Native Node.js deployment with systemd-managed API, worker and frontend,
+      host-managed MySQL, static admin assets and an Nginx TLS reverse proxy.
 - [x] Explicit forward migration, secure bootstrap, backup/restore and recovery
       guidance plus admin/owner/launch checklists.
-- [ ] Build and start Docker images on a Docker-enabled deployment host.
+- [ ] Install, build and start the three applications on the production host.
 - [ ] Complete owner inputs, real TLS/domain, production SMTP receipt, staging
       restore drill and human assistive-technology review before launch.

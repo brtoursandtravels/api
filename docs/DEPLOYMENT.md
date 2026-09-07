@@ -1,47 +1,147 @@
 # Production deployment and recovery
 
-The production topology uses the three independent npm applications. The
-Compose file lives under the API project because the API owns operational
-configuration; it builds the sibling frontend and admin folders without
-creating a package or application at the workspace root.
+The production deployment runs the three npm applications directly on a Linux
+host. MySQL and Nginx are host-managed services, while systemd keeps the API,
+notification worker and Next.js frontend running.
 
-## Before the first launch
+## Host layout and prerequisites
 
-1. Install Docker Engine with Compose v2 on a Linux host. Keep ports 3306,
-   4000 and 3000 private; only 80 and 443 are published.
-2. Copy `.env.production.example` to `.env.production` in the API folder.
-   Inject unique database, session and SMTP secrets from the host secret
-   manager. Never commit this file.
-3. Replace `br.example.com` in `infra/nginx/br-tours.conf` and
-   `infra/compose.production.yml` with the confirmed domain. Set the same
-   HTTPS origin in `PUBLIC_SITE_URL` and `CORS_ALLOWED_ORIGINS`.
-4. Provision a valid certificate before starting the proxy. Mount the host
-   directory containing `live/<domain>/fullchain.pem` and `privkey.pem` through
-   `BR_TLS_CERTS_DIR`. The Nginx configuration redirects all HTTP traffic to
-   HTTPS; it contains no reference-site downgrade behavior.
-5. Complete `docs/OWNER_INPUTS.md`. Keep `DEMO_MODE=false` and
-   `ALLOW_DEMO_SEED=false` in production.
+Install Node.js 24, npm 11, MySQL 8.4, Nginx, Git, `curl`, `gzip` and `tar`.
+Keep ports 3000, 4000 and 3306 private; expose only ports 80 and 443 through
+Nginx.
 
-## Review, build, migrate and start
+Use a dedicated, non-login service account and place the repositories at:
 
-Run commands from `tours_and_travels_api`:
-
-```sh
-docker compose -f infra/compose.production.yml config
-docker compose -f infra/compose.production.yml build --pull
-docker compose -f infra/compose.production.yml up -d mysql
-docker compose -f infra/compose.production.yml --profile operations run --rm migrate npx prisma migrate status
-docker compose -f infra/compose.production.yml --profile operations run --rm migrate
-docker compose -f infra/compose.production.yml --profile operations run --rm migrate npm run admin:create
-docker compose -f infra/compose.production.yml up -d api worker web admin proxy
-docker compose -f infra/compose.production.yml ps
+```text
+/srv/br-tours/tours_and_travels_fe
+/srv/br-tours/tours_and_travels_adminpanel
+/srv/br-tours/tours_and_travels_api
 ```
 
-The migration service is an explicit one-off operation. Neither API nor worker
-startup runs migrations or destructive resets. Review every new SQL migration,
-take a backup, run `prisma migrate status`, and use `prisma migrate deploy`.
-Roll application images back when necessary; correct database mistakes with a
-new forward migration instead of deleting applied migration history.
+Store production secrets outside Git. The examples below use:
+
+```text
+/etc/br-tours/api.env
+/etc/br-tours/web.env
+/etc/br-tours/admin.env
+```
+
+Make these files readable only by the deployment account. The API environment
+must provide the database, session, origin, media and SMTP values validated by
+`src/env.ts`. Keep `DEMO_MODE=false` and `ALLOW_DEMO_SEED=false` in production.
+
+## Install, build and migrate
+
+Run the following after pulling the reviewed release:
+
+```sh
+cd /srv/br-tours/tours_and_travels_api
+npm ci
+set -a
+. /etc/br-tours/api.env
+set +a
+npm run env:check
+npm run build
+npx prisma migrate status
+npm run db:migrate:deploy
+npm run admin:create
+
+cd /srv/br-tours/tours_and_travels_fe
+npm ci
+set -a
+. /etc/br-tours/web.env
+set +a
+npm run build
+
+cd /srv/br-tours/tours_and_travels_adminpanel
+npm ci
+set -a
+. /etc/br-tours/admin.env
+set +a
+npm run build
+```
+
+Review every SQL migration and take a backup before `db:migrate:deploy`. Never
+run `prisma migrate reset` or the demo seed in production. Create the first
+administrator interactively only on a trusted terminal.
+
+## systemd services
+
+Create `/etc/systemd/system/br-tours-api.service`:
+
+```ini
+[Unit]
+Description=BR Tours API
+After=network-online.target mysql.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=brtours
+Group=brtours
+WorkingDirectory=/srv/br-tours/tours_and_travels_api
+EnvironmentFile=/etc/br-tours/api.env
+ExecStart=/usr/bin/node dist/server.js
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Create `/etc/systemd/system/br-tours-worker.service` with the same settings,
+then change the description and start command to:
+
+```ini
+Description=BR Tours notification worker
+ExecStart=/usr/bin/node dist/worker.js
+```
+
+Create `/etc/systemd/system/br-tours-web.service`:
+
+```ini
+[Unit]
+Description=BR Tours public website
+After=network-online.target br-tours-api.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=brtours
+Group=brtours
+WorkingDirectory=/srv/br-tours/tours_and_travels_fe
+EnvironmentFile=/etc/br-tours/web.env
+ExecStart=/usr/bin/npm start
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Confirm the absolute paths returned by `command -v node` and `command -v npm`
+and adjust `ExecStart` if necessary. Then enable the services:
+
+```sh
+sudo systemctl daemon-reload
+sudo systemctl enable --now br-tours-api br-tours-worker br-tours-web
+sudo systemctl status br-tours-api br-tours-worker br-tours-web
+```
+
+## Nginx and TLS
+
+Update the domain and static admin path in `infra/nginx/br-tours.conf`, copy it
+to `/etc/nginx/conf.d/br-tours.conf`, and provision the referenced TLS
+certificate. Validate and reload Nginx:
+
+```sh
+sudo nginx -t
+sudo systemctl reload nginx
+```
 
 Verify from outside the host:
 
@@ -53,65 +153,56 @@ curl -I https://br.example.com/admin/
 curl -I http://br.example.com/
 ```
 
-The final HTTP request must redirect to HTTPS. Confirm nested admin URLs refresh,
-an authenticated admin can upload media, the worker can reach SMTP, and the
-public site can read a newly published edit before enabling traffic.
+The final request must redirect to HTTPS. Confirm nested admin URLs refresh, an
+authenticated administrator can upload media, the worker can reach SMTP, and
+the public site can read newly published content before enabling traffic.
 
 ## Database and media backups
 
-Choose an encrypted backup directory outside the repository. A consistent
-full backup is simplest during a short maintenance window:
+Use an encrypted backup directory outside the repository. During a short
+maintenance window:
 
 ```sh
 export BR_BACKUP_DIR=/srv/backups/br-tours
 export BR_BACKUP_STAMP=$(date -u +%Y%m%dT%H%M%SZ)
-mkdir -p "$BR_BACKUP_DIR"
-docker compose -f infra/compose.production.yml stop api worker
-docker compose -f infra/compose.production.yml exec -T mysql sh -c 'exec mysqldump --single-transaction --routines --triggers --set-gtid-purged=OFF -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE"' | gzip > "$BR_BACKUP_DIR/database-$BR_BACKUP_STAMP.sql.gz"
-docker run --rm -v br_tours_media:/source:ro -v "$BR_BACKUP_DIR":/backup alpine:3.22 tar -C /source -czf "/backup/media-$BR_BACKUP_STAMP.tar.gz" .
-docker compose -f infra/compose.production.yml start api worker
+sudo install -d -m 0700 "$BR_BACKUP_DIR"
+sudo systemctl stop br-tours-api br-tours-worker
+mysqldump --single-transaction --routines --triggers br_tours | gzip > "$BR_BACKUP_DIR/database-$BR_BACKUP_STAMP.sql.gz"
+tar -C /srv/br-tours/tours_and_travels_api/storage -czf "$BR_BACKUP_DIR/media-$BR_BACKUP_STAMP.tar.gz" media
+sudo systemctl start br-tours-api br-tours-worker
 sha256sum "$BR_BACKUP_DIR/database-$BR_BACKUP_STAMP.sql.gz" "$BR_BACKUP_DIR/media-$BR_BACKUP_STAMP.tar.gz" > "$BR_BACKUP_DIR/checksums-$BR_BACKUP_STAMP.txt"
 ```
 
-Encrypt and copy both artifacts and their checksums off-host. Define retention,
-monitor backup age/size, and perform a staging restore drill regularly. A
-database dump without the matching media archive is not a complete backup.
+Use a protected MySQL option file or an interactive password prompt; do not put
+database passwords in shell history. Encrypt and copy the database, media and
+checksum files off-host. Test restoration regularly against a separate staging
+database and media directory.
 
 ## Restore drill
 
 Restores replace business data and require an approved maintenance window.
-Verify filenames, checksums and the target host first. Prefer restoring to a
-new staging database and a new named media volume, validating the application,
-then switching traffic.
+Verify filenames, checksums and the target database first:
 
 ```sh
 sha256sum -c /srv/backups/br-tours/checksums-<stamp>.txt
-docker volume create br_tours_media_restore_<stamp>
-docker run --rm -v br_tours_media_restore_<stamp>:/target -v /srv/backups/br-tours:/backup:ro alpine:3.22 tar -C /target -xzf /backup/media-<stamp>.tar.gz
-gunzip -c /srv/backups/br-tours/database-<stamp>.sql.gz | docker compose -f infra/compose.production.yml exec -T mysql sh -c 'exec mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE"'
+install -d -m 0750 /srv/br-tours/restore/media
+tar -C /srv/br-tours/restore -xzf /srv/backups/br-tours/media-<stamp>.tar.gz
+gunzip -c /srv/backups/br-tours/database-<stamp>.sql.gz | mysql br_tours_restore
 ```
 
-Do not overwrite `br_tours_media` until the restored volume has been inspected.
-After a database restore, run migration status/deploy, start API and worker,
-verify readiness, media delivery, admin login and a non-production enquiry,
-then document the recovery point and outcome.
+Inspect the restored data before switching the application to it. Then run
+migration status/deploy, restart the services, and verify readiness, media
+delivery, administrator login and a non-production enquiry.
 
-## Operations
+## Operations and updates
 
-- Monitor `/api/v1/ready`, container restarts, MySQL capacity, disk space,
-  certificate expiry and notification rows remaining FAILED/CANCELLED.
-- Compose bounds each container's JSON logs to five 10 MB files. Keep API log
-  redaction enabled and ship/retain production logs according to the approved
-  incident and privacy policy.
-- Rotate the session secret by revoking sessions and requiring staff to sign in
-  again. Rotate database/SMTP credentials through the secret manager.
-- Keep media storage persistent. The current adapter is local filesystem storage;
-  moving to object storage requires implementing the documented provider boundary,
-  not exposing a public bucket of private assets.
-- Update with pinned images, reviewed migrations, complete tests and a fresh
-  backup. Never run `prisma migrate reset` or demo seed in production.
-
-Docker is not installed in the current Windows development environment, so the
-Compose configuration and Docker image builds are supplied but not claimed as
-executed here. Local npm builds and real-XAMPP MySQL tests are reported in
-`docs/TEST_REPORT.md`.
+- Monitor `/api/v1/ready`, systemd restart counts, MySQL capacity, disk space,
+  certificate expiry and failed notification rows.
+- Read service logs with `journalctl -u br-tours-api`,
+  `journalctl -u br-tours-worker` and `journalctl -u br-tours-web`.
+- Keep API log redaction enabled and configure journald retention according to
+  the approved incident and privacy policy.
+- Rotate session, database and SMTP secrets through the host secret manager.
+- Keep `storage/media` persistent and include it with every database backup.
+- For updates, pull the reviewed revision, run `npm ci` and production builds,
+  deploy migrations, then restart the three services with `systemctl restart`.

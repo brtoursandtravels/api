@@ -18,10 +18,8 @@ separate guide in the admin project.
 
 1. Review the local `.env`. It contains local-only development configuration
    and is ignored by this project.
-2. Use the existing XAMPP MariaDB service on 127.0.0.1:3306, or start the
-   optional pinned local services:
-
-       docker compose -f infra/docker-compose.services.yml up -d
+2. Start the local XAMPP MariaDB service on `127.0.0.1:3306` and configure the
+   SMTP connection referenced by `.env`.
 
 3. Apply the reviewed migration and seed labelled demo content:
 
@@ -33,12 +31,12 @@ separate guide in the admin project.
        npm run dev
 
 Health is available at http://localhost:4000/health and readiness at
-http://localhost:4000/ready. Mailpit is loopback-only at http://localhost:8025.
+http://localhost:4000/ready.
 
-The owner-provided XAMPP service was detected and used for the br_tours
+The owner-provided XAMPP service was detected and used for the `br_tours`
 development database. The migration, seed and API readiness checks have been
-executed successfully. Docker itself is
-not installed on this machine, so Compose/image validation remains pending.
+executed successfully. Production deployment uses native Node.js services,
+host-managed MySQL and Nginx as documented in `docs/DEPLOYMENT.md`.
 
 ## Commands
 
