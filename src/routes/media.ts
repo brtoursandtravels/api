@@ -89,6 +89,14 @@ publicMediaRouter.get("/:id", async (request, response) => {
       "MEDIA_NOT_FOUND",
       "This media file is not available.",
     );
+  if (process.env.VERCEL && record.storageKey.startsWith("seed/")) {
+    const publicPath = record.storageKey
+      .split("/")
+      .map((segment) => encodeURIComponent(segment))
+      .join("/");
+    response.redirect(307, `${env.MEDIA_PUBLIC_BASE_URL}/${publicPath}`);
+    return;
+  }
   response.setHeader(
     "cache-control",
     "public, max-age=86400, stale-while-revalidate=604800",
