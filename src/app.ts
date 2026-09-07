@@ -1,7 +1,8 @@
 import { randomUUID } from "node:crypto";
+import { createRequire } from "node:module";
 import cors from "cors";
 import express, { type ErrorRequestHandler } from "express";
-import * as helmet from "helmet";
+import type helmetFactory from "helmet";
 import multer from "multer";
 import { pinoHttp } from "pino-http";
 import { ZodError } from "zod";
@@ -17,6 +18,8 @@ import { adminInquiriesRouter, inquiriesRouter } from "./routes/inquiries.js";
 import { packageRouter } from "./routes/packages.js";
 import { publicContentRouter } from "./routes/public-content.js";
 import { adminMediaRouter, publicMediaRouter } from "./routes/media.js";
+
+const helmet = createRequire(import.meta.url)("helmet") as typeof helmetFactory;
 
 export const app = express();
 app.disable("x-powered-by");
@@ -45,7 +48,7 @@ app.use((request, response, next) => {
   next();
 });
 app.use(
-  helmet.default({
+  helmet({
     strictTransportSecurity:
       env.NODE_ENV === "production"
         ? { maxAge: 31_536_000, includeSubDomains: true }
