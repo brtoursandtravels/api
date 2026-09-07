@@ -4,7 +4,7 @@ dist/
 node_modules/
 src/generated/prisma/
 storage/
-media/
+/media/
 test-results/
 playwright-report/
 *.log

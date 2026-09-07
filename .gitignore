@@ -3,7 +3,7 @@ dist/
 coverage/
 src/generated/prisma/
 .env*
-media/
+/media/
 storage/
 test-results/
 playwright-report/
