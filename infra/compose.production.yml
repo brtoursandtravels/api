@@ -1,0 +1,186 @@
+name: br-tours
+
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "5"
+
+services:
+  mysql:
+    image: mysql:8.4.11
+    env_file:
+      - ../.env.production
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_0900_ai_ci
+    volumes:
+      - br_mysql_data:/var/lib/mysql
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "mysqladmin ping -h 127.0.0.1 -u$${MYSQL_USER} -p$${MYSQL_PASSWORD} --silent",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+    restart: unless-stopped
+    logging: *default-logging
+    networks:
+      - backend
+
+  migrate:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+      target: operations
+    env_file:
+      - ../.env.production
+    depends_on:
+      mysql:
+        condition: service_healthy
+    profiles: ["operations"]
+    logging: *default-logging
+    networks:
+      - backend
+
+  api:
+    image: br-tours-api:production
+    build:
+      context: ..
+      dockerfile: Dockerfile
+      target: runtime
+    env_file:
+      - ../.env.production
+    environment:
+      MEDIA_ROOT: /var/lib/br-tours/media
+      MEDIA_PUBLIC_BASE_URL: /media
+    volumes:
+      - br_media_data:/var/lib/br-tours/media
+    depends_on:
+      mysql:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:4000/api/v1/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    init: true
+    restart: unless-stopped
+    logging: *default-logging
+    networks:
+      - backend
+      - edge
+
+  worker:
+    image: br-tours-api:production
+    env_file:
+      - ../.env.production
+    command: ["node", "dist/worker.js"]
+    depends_on:
+      mysql:
+        condition: service_healthy
+    init: true
+    restart: unless-stopped
+    logging: *default-logging
+    networks:
+      - backend
+      - edge
+
+  web:
+    image: br-tours-web:production
+    build:
+      context: ../../tours_and_travels_fe
+      dockerfile: Dockerfile
+      args:
+        INTERNAL_API_BASE_URL: http://api:4000/api/v1
+        NEXT_PUBLIC_API_BASE_URL: /api/v1
+        NEXT_PUBLIC_SITE_URL: https://br.example.com
+    environment:
+      INTERNAL_API_BASE_URL: http://api:4000/api/v1
+      NEXT_PUBLIC_API_BASE_URL: /api/v1
+      NEXT_PUBLIC_SITE_URL: https://br.example.com
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3000/robots.txt').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    init: true
+    restart: unless-stopped
+    logging: *default-logging
+    networks:
+      - edge
+
+  admin:
+    image: br-tours-admin:production
+    build:
+      context: ../../tours_and_travels_adminpanel
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: /api/v1
+        VITE_PUBLIC_SITE_URL: https://br.example.com
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/admin/"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    restart: unless-stopped
+    logging: *default-logging
+    networks:
+      - edge
+
+  proxy:
+    image: nginx:1.30.4-alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/br-tours.conf:/etc/nginx/conf.d/default.conf:ro
+      - ${BR_TLS_CERTS_DIR:-./certs}:/etc/letsencrypt:ro
+    depends_on:
+      api:
+        condition: service_healthy
+      web:
+        condition: service_healthy
+      admin:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "nginx", "-t"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
+    logging: *default-logging
+    networks:
+      - edge
+
+volumes:
+  br_mysql_data:
+    name: br_tours_mysql
+  br_media_data:
+    name: br_tours_media
+
+networks:
+  backend:
+    internal: true
+  edge:

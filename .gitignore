@@ -1,0 +1,11 @@
+node_modules/
+dist/
+coverage/
+src/generated/prisma/
+.env*
+media/
+storage/
+test-results/
+playwright-report/
+*.log
+*.tsbuildinfo

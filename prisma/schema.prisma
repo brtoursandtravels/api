@@ -1,0 +1,650 @@
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  moduleFormat = "esm"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+enum AdminRole {
+  SUPER_ADMIN
+  CONTENT_EDITOR
+  SALES_AGENT
+}
+
+enum UserStatus {
+  ACTIVE
+  DISABLED
+}
+
+enum PublicationStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum PackagePriceBasis {
+  PER_PERSON
+  PER_GROUP
+  PER_ROOM
+  ON_REQUEST
+}
+
+enum DepartureStatus {
+  SCHEDULED
+  CANCELLED
+  COMPLETED
+}
+
+enum MediaVisibility {
+  PUBLIC
+  PRIVATE
+}
+
+enum StorageProvider {
+  LOCAL
+  S3_COMPATIBLE
+}
+
+enum HomepageSectionType {
+  HERO
+  DISCOVERY
+  FEATURED_PACKAGES
+  CATEGORIES
+  DESTINATIONS
+  INTRODUCTION
+  PLANNING_PROCESS
+  GALLERY
+  TESTIMONIALS
+  LATEST_BLOG
+  FAQS
+  CONTACT_CTA
+}
+
+enum EnquiryType {
+  GENERAL
+  PACKAGE_ENQUIRY
+  BOOKING_REQUEST
+}
+
+enum EnquiryStatus {
+  NEW
+  CONTACTED
+  QUOTED
+  CONFIRMED
+  CLOSED
+  LOST
+}
+
+enum NotificationStatus {
+  PENDING
+  PROCESSING
+  SENT
+  FAILED
+  CANCELLED
+}
+
+model AdminUser {
+  id            String                 @id @default(cuid()) @db.VarChar(30)
+  email         String                 @unique @db.VarChar(254)
+  displayName   String                 @db.VarChar(120)
+  publicName    String?                @db.VarChar(120)
+  publicBio     String?                @db.Text
+  passwordHash  String                 @db.VarChar(255)
+  role          AdminRole
+  status        UserStatus             @default(ACTIVE)
+  lastLoginAt   DateTime?              @db.DateTime(3)
+  createdAt     DateTime               @default(now()) @db.DateTime(3)
+  updatedAt     DateTime               @updatedAt @db.DateTime(3)
+  sessions      Session[]
+  resetTokens   PasswordResetToken[]
+  uploadedMedia MediaAsset[]           @relation("MediaUploadedBy")
+  assignedLeads Enquiry[]              @relation("EnquiryAssignee")
+  enquiryNotes  EnquiryNote[]
+  statusChanges EnquiryStatusHistory[]
+  auditLogs     AuditLog[]             @relation("AuditActor")
+
+  @@index([role, status])
+}
+
+model Session {
+  id         String    @id @default(cuid()) @db.VarChar(30)
+  tokenHash  String    @unique @db.Char(64)
+  userId     String    @db.VarChar(30)
+  expiresAt  DateTime  @db.DateTime(3)
+  lastSeenAt DateTime  @default(now()) @db.DateTime(3)
+  ipHash     String?   @db.Char(64)
+  userAgent  String?   @db.VarChar(512)
+  createdAt  DateTime  @default(now()) @db.DateTime(3)
+  user       AdminUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, expiresAt])
+  @@index([expiresAt])
+}
+
+model PasswordResetToken {
+  id        String    @id @default(cuid()) @db.VarChar(30)
+  tokenHash String    @unique @db.Char(64)
+  userId    String    @db.VarChar(30)
+  expiresAt DateTime  @db.DateTime(3)
+  usedAt    DateTime? @db.DateTime(3)
+  createdAt DateTime  @default(now()) @db.DateTime(3)
+  user      AdminUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, expiresAt])
+}
+
+model Destination {
+  id          String               @id @default(cuid()) @db.VarChar(30)
+  slug        String               @unique @db.VarChar(180)
+  name        String               @db.VarChar(160)
+  summary     String?              @db.Text
+  status      PublicationStatus    @default(DRAFT)
+  publishedAt DateTime?            @db.DateTime(3)
+  isDemo      Boolean              @default(false)
+  sortOrder   Int                  @default(0)
+  createdAt   DateTime             @default(now()) @db.DateTime(3)
+  updatedAt   DateTime             @updatedAt @db.DateTime(3)
+  packages    PackageDestination[]
+  albums      GalleryAlbum[]
+
+  @@index([status, publishedAt, isDemo])
+  @@index([sortOrder])
+}
+
+model Category {
+  id          String            @id @default(cuid()) @db.VarChar(30)
+  slug        String            @unique @db.VarChar(180)
+  name        String            @db.VarChar(160)
+  description String?           @db.Text
+  status      PublicationStatus @default(DRAFT)
+  publishedAt DateTime?         @db.DateTime(3)
+  isDemo      Boolean           @default(false)
+  sortOrder   Int               @default(0)
+  createdAt   DateTime          @default(now()) @db.DateTime(3)
+  updatedAt   DateTime          @updatedAt @db.DateTime(3)
+  packages    PackageCategory[]
+
+  @@index([status, publishedAt, isDemo])
+}
+
+model Package {
+  id                   String               @id @default(cuid()) @db.VarChar(30)
+  slug                 String               @unique @db.VarChar(180)
+  title                String               @db.VarChar(200)
+  summary              String               @db.VarChar(500)
+  overview             String               @db.Text
+  days                 Int
+  nights               Int
+  startingCity         String?              @db.VarChar(160)
+  basePrice            Decimal?             @db.Decimal(12, 2)
+  currency             String               @default("INR") @db.Char(3)
+  priceBasis           PackagePriceBasis    @default(ON_REQUEST)
+  highlights           Json
+  inclusions           Json
+  exclusions           Json
+  transportInformation String?              @db.Text
+  accommodationNotes   String?              @db.Text
+  importantInformation String?              @db.Text
+  cancellationRules    String?              @db.Text
+  seoTitle             String?              @db.VarChar(70)
+  seoDescription       String?              @db.VarChar(170)
+  brochureMediaId      String?              @db.VarChar(30)
+  status               PublicationStatus    @default(DRAFT)
+  publishedAt          DateTime?            @db.DateTime(3)
+  isFeatured           Boolean              @default(false)
+  featuredOrder        Int?
+  isDemo               Boolean              @default(false)
+  createdAt            DateTime             @default(now()) @db.DateTime(3)
+  updatedAt            DateTime             @updatedAt @db.DateTime(3)
+  destinations         PackageDestination[]
+  categories           PackageCategory[]
+  itineraryDays        ItineraryDay[]
+  departures           Departure[]
+  media                PackageMedia[]
+  brochureMedia        MediaAsset?          @relation("PackageBrochure", fields: [brochureMediaId], references: [id], onDelete: SetNull)
+  faqs                 Faq[]
+  enquiries            Enquiry[]
+  relatedPosts         BlogPostPackage[]
+
+  @@index([status, publishedAt, isDemo])
+  @@index([isFeatured, featuredOrder])
+  @@index([days])
+  @@index([startingCity])
+  @@index([brochureMediaId])
+}
+
+model PackageDestination {
+  packageId     String      @db.VarChar(30)
+  destinationId String      @db.VarChar(30)
+  sortOrder     Int         @default(0)
+  package       Package     @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  destination   Destination @relation(fields: [destinationId], references: [id], onDelete: Restrict)
+
+  @@id([packageId, destinationId])
+  @@index([destinationId, packageId])
+}
+
+model PackageCategory {
+  packageId  String   @db.VarChar(30)
+  categoryId String   @db.VarChar(30)
+  package    Package  @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+
+  @@id([packageId, categoryId])
+  @@index([categoryId, packageId])
+}
+
+model ItineraryDay {
+  id            String  @id @default(cuid()) @db.VarChar(30)
+  packageId     String  @db.VarChar(30)
+  dayNumber     Int
+  title         String  @db.VarChar(200)
+  description   String  @db.Text
+  activities    Json?
+  meals         String? @db.VarChar(200)
+  accommodation String? @db.VarChar(255)
+  package       Package @relation(fields: [packageId], references: [id], onDelete: Cascade)
+
+  @@unique([packageId, dayNumber])
+  @@index([packageId, dayNumber])
+}
+
+model Departure {
+  id             String          @id @default(cuid()) @db.VarChar(30)
+  packageId      String          @db.VarChar(30)
+  startDate      DateTime        @db.Date
+  endDate        DateTime        @db.Date
+  pricePerPerson Decimal?        @db.Decimal(12, 2)
+  currency       String          @default("INR") @db.Char(3)
+  status         DepartureStatus @default(SCHEDULED)
+  note           String?         @db.VarChar(500)
+  createdAt      DateTime        @default(now()) @db.DateTime(3)
+  updatedAt      DateTime        @updatedAt @db.DateTime(3)
+  package        Package         @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  enquiries      Enquiry[]
+
+  @@unique([packageId, startDate])
+  @@index([status, startDate])
+}
+
+model MediaAsset {
+  id               String              @id @default(cuid()) @db.VarChar(30)
+  storageKey       String              @unique @db.VarChar(512)
+  originalName     String              @db.VarChar(255)
+  mimeType         String              @db.VarChar(100)
+  sizeBytes        BigInt
+  width            Int?
+  height           Int?
+  altText          String              @db.VarChar(300)
+  caption          String?             @db.VarChar(500)
+  sourceNotes      String?             @db.Text
+  licenseNotes     String?             @db.Text
+  visibility       MediaVisibility     @default(PRIVATE)
+  provider         StorageProvider     @default(LOCAL)
+  uploadedById     String?             @db.VarChar(30)
+  createdAt        DateTime            @default(now()) @db.DateTime(3)
+  updatedAt        DateTime            @updatedAt @db.DateTime(3)
+  uploadedBy       AdminUser?          @relation("MediaUploadedBy", fields: [uploadedById], references: [id], onDelete: SetNull)
+  packageMedia     PackageMedia[]
+  albumImages      GalleryAlbumImage[]
+  blogCovers       BlogPost[]          @relation("BlogCover")
+  packageBrochures Package[]           @relation("PackageBrochure")
+
+  @@index([visibility, createdAt])
+}
+
+model PackageMedia {
+  packageId    String     @db.VarChar(30)
+  mediaAssetId String     @db.VarChar(30)
+  sortOrder    Int        @default(0)
+  isCover      Boolean    @default(false)
+  package      Package    @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  mediaAsset   MediaAsset @relation(fields: [mediaAssetId], references: [id], onDelete: Restrict)
+
+  @@id([packageId, mediaAssetId])
+  @@index([packageId, sortOrder])
+}
+
+model GalleryAlbum {
+  id            String              @id @default(cuid()) @db.VarChar(30)
+  slug          String              @unique @db.VarChar(180)
+  title         String              @db.VarChar(200)
+  description   String?             @db.Text
+  destinationId String?             @db.VarChar(30)
+  status        PublicationStatus   @default(DRAFT)
+  publishedAt   DateTime?           @db.DateTime(3)
+  isDemo        Boolean             @default(false)
+  createdAt     DateTime            @default(now()) @db.DateTime(3)
+  updatedAt     DateTime            @updatedAt @db.DateTime(3)
+  destination   Destination?        @relation(fields: [destinationId], references: [id], onDelete: SetNull)
+  images        GalleryAlbumImage[]
+
+  @@index([status, publishedAt, isDemo])
+  @@index([destinationId])
+}
+
+model GalleryAlbumImage {
+  albumId      String       @db.VarChar(30)
+  mediaAssetId String       @db.VarChar(30)
+  sortOrder    Int          @default(0)
+  album        GalleryAlbum @relation(fields: [albumId], references: [id], onDelete: Cascade)
+  mediaAsset   MediaAsset   @relation(fields: [mediaAssetId], references: [id], onDelete: Restrict)
+
+  @@id([albumId, mediaAssetId])
+  @@index([albumId, sortOrder])
+}
+
+model BlogCategory {
+  id          String            @id @default(cuid()) @db.VarChar(30)
+  slug        String            @unique @db.VarChar(180)
+  name        String            @db.VarChar(160)
+  status      PublicationStatus @default(DRAFT)
+  publishedAt DateTime?         @db.DateTime(3)
+  isDemo      Boolean           @default(false)
+  posts       BlogPost[]
+  createdAt   DateTime          @default(now()) @db.DateTime(3)
+  updatedAt   DateTime          @updatedAt @db.DateTime(3)
+
+  @@index([status, publishedAt, isDemo])
+}
+
+model BlogPost {
+  id               String            @id @default(cuid()) @db.VarChar(30)
+  slug             String            @unique @db.VarChar(180)
+  title            String            @db.VarChar(220)
+  excerpt          String            @db.VarChar(500)
+  contentHtml      String            @db.LongText
+  categoryId       String?           @db.VarChar(30)
+  coverMediaId     String?           @db.VarChar(30)
+  authorId         String?           @db.VarChar(30)
+  publicAuthorName String?           @db.VarChar(120)
+  publicAuthorBio  String?           @db.VarChar(1000)
+  seoTitle         String?           @db.VarChar(70)
+  seoDescription   String?           @db.VarChar(170)
+  status           PublicationStatus @default(DRAFT)
+  publishedAt      DateTime?         @db.DateTime(3)
+  isFeatured       Boolean           @default(false)
+  isDemo           Boolean           @default(false)
+  createdAt        DateTime          @default(now()) @db.DateTime(3)
+  updatedAt        DateTime          @updatedAt @db.DateTime(3)
+  category         BlogCategory?     @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  coverMedia       MediaAsset?       @relation("BlogCover", fields: [coverMediaId], references: [id], onDelete: SetNull)
+  tags             BlogPostTag[]
+  relatedTours     BlogPostPackage[]
+  relatedArticles  BlogPostRelated[] @relation("RelatedArticleSource")
+  relatedTo        BlogPostRelated[] @relation("RelatedArticleTarget")
+
+  @@index([status, publishedAt, isDemo])
+  @@index([categoryId, publishedAt])
+  @@index([authorId])
+}
+
+model BlogPostRelated {
+  postId        String   @db.VarChar(30)
+  relatedPostId String   @db.VarChar(30)
+  post          BlogPost @relation("RelatedArticleSource", fields: [postId], references: [id], onDelete: Cascade)
+  relatedPost   BlogPost @relation("RelatedArticleTarget", fields: [relatedPostId], references: [id], onDelete: Cascade)
+
+  @@id([postId, relatedPostId])
+  @@index([relatedPostId, postId])
+}
+
+model Tag {
+  id        String        @id @default(cuid()) @db.VarChar(30)
+  slug      String        @unique @db.VarChar(180)
+  name      String        @db.VarChar(100)
+  posts     BlogPostTag[]
+  createdAt DateTime      @default(now()) @db.DateTime(3)
+}
+
+model BlogPostTag {
+  postId String   @db.VarChar(30)
+  tagId  String   @db.VarChar(30)
+  post   BlogPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  tag    Tag      @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([postId, tagId])
+  @@index([tagId, postId])
+}
+
+model BlogPostPackage {
+  postId    String   @db.VarChar(30)
+  packageId String   @db.VarChar(30)
+  post      BlogPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  package   Package  @relation(fields: [packageId], references: [id], onDelete: Cascade)
+
+  @@id([postId, packageId])
+  @@index([packageId, postId])
+}
+
+model ContentPage {
+  id             String            @id @default(cuid()) @db.VarChar(30)
+  slug           String            @unique @db.VarChar(180)
+  title          String            @db.VarChar(220)
+  contentHtml    String            @db.LongText
+  seoTitle       String?           @db.VarChar(70)
+  seoDescription String?           @db.VarChar(170)
+  status         PublicationStatus @default(DRAFT)
+  publishedAt    DateTime?         @db.DateTime(3)
+  ownerReviewDue Boolean           @default(false)
+  isDemo         Boolean           @default(false)
+  createdAt      DateTime          @default(now()) @db.DateTime(3)
+  updatedAt      DateTime          @updatedAt @db.DateTime(3)
+
+  @@index([status, publishedAt, isDemo])
+}
+
+model HomepageSection {
+  id          String              @id @default(cuid()) @db.VarChar(30)
+  type        HomepageSectionType
+  title       String?             @db.VarChar(220)
+  content     Json
+  isVisible   Boolean             @default(true)
+  sortOrder   Int
+  status      PublicationStatus   @default(DRAFT)
+  publishedAt DateTime?           @db.DateTime(3)
+  isDemo      Boolean             @default(false)
+  createdAt   DateTime            @default(now()) @db.DateTime(3)
+  updatedAt   DateTime            @updatedAt @db.DateTime(3)
+
+  @@unique([type, sortOrder])
+  @@index([status, publishedAt, isVisible, sortOrder])
+}
+
+model Setting {
+  key         String   @id @db.VarChar(120)
+  value       Json
+  isPublic    Boolean  @default(false)
+  description String?  @db.VarChar(500)
+  updatedAt   DateTime @updatedAt @db.DateTime(3)
+
+  @@index([isPublic])
+}
+
+model NavigationMenu {
+  id        String           @id @default(cuid()) @db.VarChar(30)
+  key       String           @unique @db.VarChar(80)
+  label     String           @db.VarChar(120)
+  items     NavigationItem[]
+  createdAt DateTime         @default(now()) @db.DateTime(3)
+  updatedAt DateTime         @updatedAt @db.DateTime(3)
+}
+
+model NavigationItem {
+  id        String           @id @default(cuid()) @db.VarChar(30)
+  menuId    String           @db.VarChar(30)
+  parentId  String?          @db.VarChar(30)
+  label     String           @db.VarChar(120)
+  href      String           @db.VarChar(500)
+  sortOrder Int              @default(0)
+  isVisible Boolean          @default(true)
+  menu      NavigationMenu   @relation(fields: [menuId], references: [id], onDelete: Cascade)
+  parent    NavigationItem?  @relation("NavigationTree", fields: [parentId], references: [id], onDelete: Cascade)
+  children  NavigationItem[] @relation("NavigationTree")
+
+  @@index([menuId, sortOrder])
+  @@index([parentId])
+}
+
+model Faq {
+  id          String            @id @default(cuid()) @db.VarChar(30)
+  packageId   String?           @db.VarChar(30)
+  question    String            @db.VarChar(300)
+  answer      String            @db.Text
+  sortOrder   Int               @default(0)
+  status      PublicationStatus @default(DRAFT)
+  publishedAt DateTime?         @db.DateTime(3)
+  isDemo      Boolean           @default(false)
+  package     Package?          @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  createdAt   DateTime          @default(now()) @db.DateTime(3)
+  updatedAt   DateTime          @updatedAt @db.DateTime(3)
+
+  @@index([packageId, status, sortOrder])
+}
+
+model Testimonial {
+  id           String            @id @default(cuid()) @db.VarChar(30)
+  publicName   String            @db.VarChar(120)
+  quote        String            @db.Text
+  consentNotes String?           @db.Text
+  approved     Boolean           @default(false)
+  status       PublicationStatus @default(DRAFT)
+  publishedAt  DateTime?         @db.DateTime(3)
+  isDemo       Boolean           @default(false)
+  sortOrder    Int               @default(0)
+  createdAt    DateTime          @default(now()) @db.DateTime(3)
+  updatedAt    DateTime          @updatedAt @db.DateTime(3)
+
+  @@index([approved, status, publishedAt, isDemo])
+}
+
+model Enquiry {
+  id                   String                 @id @default(cuid()) @db.VarChar(30)
+  publicReference      String                 @unique @db.VarChar(24)
+  idempotencyKey       String                 @unique @db.VarChar(128)
+  payloadHash          String                 @db.Char(64)
+  type                 EnquiryType
+  status               EnquiryStatus          @default(NEW)
+  name                 String                 @db.VarChar(120)
+  email                String                 @db.VarChar(254)
+  phone                String?                @db.VarChar(40)
+  subject              String?                @db.VarChar(200)
+  message              String                 @db.Text
+  packageTitleSnapshot String?                @db.VarChar(200)
+  packageSlugSnapshot  String?                @db.VarChar(180)
+  adultCount           Int?
+  childCount           Int?
+  partySize            Int?
+  budget               Decimal?               @db.Decimal(12, 2)
+  currency             String                 @default("INR") @db.Char(3)
+  preferredStartDate   DateTime?              @db.Date
+  packageId            String?                @db.VarChar(30)
+  departureId          String?                @db.VarChar(30)
+  assignedToId         String?                @db.VarChar(30)
+  sourcePath           String?                @db.VarChar(500)
+  sourceMetadata       Json?
+  consentAt            DateTime               @db.DateTime(3)
+  policyVersion        String                 @default("development-v1") @db.VarChar(64)
+  createdAt            DateTime               @default(now()) @db.DateTime(3)
+  updatedAt            DateTime               @updatedAt @db.DateTime(3)
+  package              Package?               @relation(fields: [packageId], references: [id], onDelete: SetNull)
+  departure            Departure?             @relation(fields: [departureId], references: [id], onDelete: SetNull)
+  assignedTo           AdminUser?             @relation("EnquiryAssignee", fields: [assignedToId], references: [id], onDelete: SetNull)
+  notes                EnquiryNote[]
+  statusHistory        EnquiryStatusHistory[]
+  notifications        NotificationOutbox[]
+
+  @@index([status, createdAt])
+  @@index([assignedToId, status])
+  @@index([packageId, createdAt])
+  @@index([email])
+}
+
+model RateLimitBucket {
+  key             String    @id @db.VarChar(191)
+  windowStartedAt DateTime  @db.DateTime(3)
+  hits            Int       @default(0)
+  blockedUntil    DateTime? @db.DateTime(3)
+  updatedAt       DateTime  @updatedAt @db.DateTime(3)
+
+  @@index([updatedAt])
+  @@index([blockedUntil])
+}
+
+model EnquiryNote {
+  id        String    @id @default(cuid()) @db.VarChar(30)
+  enquiryId String    @db.VarChar(30)
+  authorId  String    @db.VarChar(30)
+  body      String    @db.Text
+  createdAt DateTime  @default(now()) @db.DateTime(3)
+  enquiry   Enquiry   @relation(fields: [enquiryId], references: [id], onDelete: Cascade)
+  author    AdminUser @relation(fields: [authorId], references: [id], onDelete: Restrict)
+
+  @@index([enquiryId, createdAt])
+}
+
+model EnquiryStatusHistory {
+  id          String         @id @default(cuid()) @db.VarChar(30)
+  enquiryId   String         @db.VarChar(30)
+  changedById String?        @db.VarChar(30)
+  fromStatus  EnquiryStatus?
+  toStatus    EnquiryStatus
+  reason      String?        @db.VarChar(500)
+  createdAt   DateTime       @default(now()) @db.DateTime(3)
+  enquiry     Enquiry        @relation(fields: [enquiryId], references: [id], onDelete: Cascade)
+  changedBy   AdminUser?     @relation(fields: [changedById], references: [id], onDelete: SetNull)
+
+  @@index([enquiryId, createdAt])
+}
+
+model NotificationOutbox {
+  id            String             @id @default(cuid()) @db.VarChar(30)
+  enquiryId     String?            @db.VarChar(30)
+  eventType     String             @db.VarChar(100)
+  payload       Json
+  status        NotificationStatus @default(PENDING)
+  attempts      Int                @default(0)
+  nextAttemptAt DateTime           @default(now()) @db.DateTime(3)
+  lockedAt      DateTime?          @db.DateTime(3)
+  sentAt        DateTime?          @db.DateTime(3)
+  lastError     String?            @db.VarChar(500)
+  createdAt     DateTime           @default(now()) @db.DateTime(3)
+  updatedAt     DateTime           @updatedAt @db.DateTime(3)
+  enquiry       Enquiry?           @relation(fields: [enquiryId], references: [id], onDelete: SetNull)
+
+  @@index([status, nextAttemptAt])
+  @@index([enquiryId])
+}
+
+model AuditLog {
+  id         String     @id @default(cuid()) @db.VarChar(30)
+  actorId    String?    @db.VarChar(30)
+  action     String     @db.VarChar(120)
+  entityType String     @db.VarChar(100)
+  entityId   String?    @db.VarChar(64)
+  before     Json?
+  after      Json?
+  requestId  String?    @db.VarChar(64)
+  ipHash     String?    @db.Char(64)
+  createdAt  DateTime   @default(now()) @db.DateTime(3)
+  actor      AdminUser? @relation("AuditActor", fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([entityType, entityId, createdAt])
+  @@index([actorId, createdAt])
+}
+
+model SlugRedirect {
+  id         String   @id @default(cuid()) @db.VarChar(30)
+  entityType String   @db.VarChar(80)
+  oldSlug    String   @db.VarChar(180)
+  targetSlug String   @db.VarChar(180)
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now()) @db.DateTime(3)
+  updatedAt  DateTime @updatedAt @db.DateTime(3)
+
+  @@unique([entityType, oldSlug])
+  @@index([entityType, targetSlug, isActive])
+}

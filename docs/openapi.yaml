@@ -1,0 +1,1039 @@
+openapi: 3.1.0
+info:
+  title: BR Tours and Travels API
+  version: 0.3.0
+  description: >-
+    Express business API for the public website, authenticated administration,
+    media, enquiries and notification operations. Booking requests are leads,
+    not payments, issued inventory or guaranteed reservations.
+servers:
+  - url: /api/v1
+tags:
+  - { name: System }
+  - { name: Public content }
+  - { name: Authentication }
+  - { name: Enquiries }
+  - { name: Admin catalogue }
+  - { name: Admin content }
+  - { name: Admin operations }
+paths:
+  /health:
+    get:
+      tags: [System]
+      summary: Process health
+      responses: { "200": { description: API process is running } }
+  /ready:
+    get:
+      tags: [System]
+      summary: Database readiness
+      responses:
+        "200": { description: MySQL query succeeded }
+        "500": { $ref: "#/components/responses/Error" }
+  /site:
+    get:
+      tags: [Public content]
+      summary: Public settings and visible navigation
+      responses:
+        { "200": { description: Explicitly public site configuration } }
+  /home:
+    get:
+      tags: [Public content]
+      summary: Published visible homepage sections
+      responses: { "200": { description: Ordered homepage sections } }
+  /pages/{slug}:
+    get:
+      tags: [Public content]
+      summary: Published sanitized content page
+      parameters: [{ $ref: "#/components/parameters/Slug" }]
+      responses:
+        "200": { description: Public page }
+        "404": { $ref: "#/components/responses/Error" }
+  /destinations:
+    get:
+      tags: [Public content]
+      summary: Published destinations
+      responses: { "200": { description: Ordered destinations } }
+  /categories:
+    get:
+      tags: [Public content]
+      summary: Published package categories
+      responses: { "200": { description: Ordered categories } }
+  /packages:
+    get:
+      tags: [Public content]
+      summary: Filter and sort eligible published packages
+      parameters:
+        - { in: query, name: q, schema: { type: string, maxLength: 120 } }
+        - { in: query, name: destination, schema: { type: string } }
+        - { in: query, name: category, schema: { type: string } }
+        - { in: query, name: startingCity, schema: { type: string } }
+        - {
+            in: query,
+            name: minDays,
+            schema: { type: integer, minimum: 1, maximum: 90 },
+          }
+        - {
+            in: query,
+            name: maxDays,
+            schema: { type: integer, minimum: 1, maximum: 90 },
+          }
+        - { in: query, name: minPrice, schema: { type: number, minimum: 0 } }
+        - { in: query, name: maxPrice, schema: { type: number, minimum: 0 } }
+        - {
+            in: query,
+            name: month,
+            schema: { type: string, pattern: '^\d{4}-(0[1-9]|1[0-2])$' },
+          }
+        - {
+            in: query,
+            name: sort,
+            schema:
+              {
+                type: string,
+                enum: [featured, newest, price-asc, price-desc, duration],
+                default: featured,
+              },
+          }
+        - { $ref: "#/components/parameters/Page" }
+        - { $ref: "#/components/parameters/PageSize" }
+      responses:
+        "200": { description: Bounded public package page }
+        "400": { $ref: "#/components/responses/Error" }
+  /packages/{slug}:
+    get:
+      tags: [Public content]
+      summary: Eligible published package detail
+      parameters: [{ $ref: "#/components/parameters/Slug" }]
+      responses:
+        "200":
+          {
+            description: "Public package detail including eligible images; SEO metadata; and an optional public PDF brochure",
+          }
+        "308": { description: Safe old-slug redirect }
+        "404": { $ref: "#/components/responses/Error" }
+  /gallery/albums:
+    get:
+      tags: [Public content]
+      summary: Published gallery albums
+      parameters:
+        - { in: query, name: destination, schema: { type: string } }
+        - {
+            in: query,
+            name: package,
+            description: Filter to albums associated through the package destinations,
+            schema: { type: string },
+          }
+        - { $ref: "#/components/parameters/Page" }
+        - { $ref: "#/components/parameters/PageSize" }
+      responses: { "200": { description: Public gallery album page } }
+  /gallery/albums/{slug}:
+    get:
+      tags: [Public content]
+      summary: Published album with public images
+      parameters: [{ $ref: "#/components/parameters/Slug" }]
+      responses:
+        "200": { description: Public gallery album }
+        "404": { $ref: "#/components/responses/Error" }
+  /blog/categories:
+    get:
+      tags: [Public content]
+      summary: Published blog categories
+      responses: { "200": { description: Blog categories } }
+  /blog:
+    get:
+      tags: [Public content]
+      summary: Search published articles
+      parameters:
+        - { in: query, name: q, schema: { type: string, maxLength: 120 } }
+        - { in: query, name: category, schema: { type: string } }
+        - { $ref: "#/components/parameters/Page" }
+        - { $ref: "#/components/parameters/PageSize" }
+      responses: { "200": { description: Published article page } }
+  /blog/{slug}:
+    get:
+      tags: [Public content]
+      summary: Published sanitized article
+      parameters: [{ $ref: "#/components/parameters/Slug" }]
+      responses:
+        "200": { description: Public article }
+        "404": { $ref: "#/components/responses/Error" }
+  /faqs:
+    get:
+      tags: [Public content]
+      summary: Published global or package FAQs
+      parameters: [{ in: query, name: package, schema: { type: string } }]
+      responses: { "200": { description: Ordered FAQs } }
+  /testimonials:
+    get:
+      tags: [Public content]
+      summary: Approved published testimonials
+      responses: { "200": { description: Genuine approved testimonials only } }
+  /inquiries:
+    post:
+      tags: [Enquiries]
+      summary: Persist an idempotent contact, package enquiry or booking request
+      parameters: [{ $ref: "#/components/parameters/IdempotencyKey" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/InquiryInput" }
+      responses:
+        "201": { description: New request persisted with its outbox event }
+        "200":
+          {
+            description: Identical idempotent retry returned the original receipt,
+          }
+        "409": { $ref: "#/components/responses/Error" }
+  /auth/csrf:
+    get:
+      tags: [Authentication]
+      summary: Get a pre-auth or session-bound CSRF token
+      responses: { "200": { description: Non-cacheable CSRF token } }
+  /auth/login:
+    post:
+      tags: [Authentication]
+      summary: Verify credentials and rotate into an opaque MySQL session
+      parameters: [{ $ref: "#/components/parameters/CsrfToken" }]
+      requestBody:
+        required: true
+        content:
+          {
+            application/json:
+              { schema: { $ref: "#/components/schemas/LoginInput" } },
+          }
+      responses:
+        "200": { description: HttpOnly session cookie and explicit admin DTO }
+        "401": { $ref: "#/components/responses/Error" }
+        "429": { $ref: "#/components/responses/Error" }
+  /auth/logout:
+    post:
+      tags: [Authentication]
+      security: [{ cookieAuth: [] }]
+      parameters: [{ $ref: "#/components/parameters/CsrfToken" }]
+      responses: { "204": { description: Session revoked and cookie cleared } }
+  /auth/me:
+    get:
+      tags: [Authentication]
+      security: [{ cookieAuth: [] }]
+      responses: { "200": { description: Current explicit admin identity DTO } }
+  /auth/profile:
+    put:
+      tags: [Authentication]
+      summary: Update the current admin profile
+      security: [{ cookieAuth: [] }]
+      parameters: [{ $ref: "#/components/parameters/CsrfToken" }]
+      responses: { "200": { description: Updated explicit admin identity DTO } }
+  /auth/change-password:
+    post:
+      tags: [Authentication]
+      summary: Change the current password and revoke every session
+      security: [{ cookieAuth: [] }]
+      parameters: [{ $ref: "#/components/parameters/CsrfToken" }]
+      responses:
+        { "204": { description: Password changed and session cookie cleared } }
+  /auth/forgot-password:
+    post:
+      tags: [Authentication]
+      parameters: [{ $ref: "#/components/parameters/CsrfToken" }]
+      responses: { "202": { description: Enumeration-safe reset response } }
+  /auth/reset-password:
+    post:
+      tags: [Authentication]
+      parameters: [{ $ref: "#/components/parameters/CsrfToken" }]
+      responses:
+        {
+          "200":
+            { description: Single-use token consumed and sessions revoked },
+        }
+  /admin/dashboard:
+    get:
+      tags: [Admin operations]
+      security: [{ cookieAuth: [] }]
+      responses:
+        {
+          "200":
+            {
+              description: "Live database aggregates with explicit enquiry status counts and a 14-day enquiry trend",
+            },
+        }
+  /admin/packages:
+    get:
+      tags: [Admin catalogue]
+      security: [{ cookieAuth: [] }]
+      responses:
+        { "200": { description: "Draft, published and archived package page" } }
+    post:
+      tags: [Admin catalogue]
+      security: [{ cookieAuth: [] }]
+      parameters: [{ $ref: "#/components/parameters/CsrfToken" }]
+      responses:
+        {
+          "201":
+            {
+              description: Package and nested catalogue data created transactionally,
+            },
+        }
+  /admin/packages/{id}:
+    get:
+      tags: [Admin catalogue]
+      security: [{ cookieAuth: [] }]
+      parameters: [{ $ref: "#/components/parameters/Id" }]
+      responses: { "200": { description: Protected package draft/detail } }
+    put:
+      tags: [Admin catalogue]
+      security: [{ cookieAuth: [] }]
+      parameters:
+        [
+          { $ref: "#/components/parameters/Id" },
+          { $ref: "#/components/parameters/CsrfToken" },
+        ]
+      responses:
+        {
+          "200":
+            {
+              description: Package and nested records replaced transactionally,
+            },
+        }
+    delete:
+      tags: [Admin catalogue]
+      security: [{ cookieAuth: [] }]
+      parameters:
+        [
+          { $ref: "#/components/parameters/Id" },
+          { $ref: "#/components/parameters/CsrfToken" },
+        ]
+      responses:
+        { "204": { description: Package archived; historical leads preserved } }
+  /admin/destinations:
+    get:
+      {
+        tags: [Admin catalogue],
+        security: [{ cookieAuth: [] }],
+        responses: { "200": { description: All destinations } },
+      }
+    post:
+      {
+        tags: [Admin catalogue],
+        security: [{ cookieAuth: [] }],
+        parameters: [{ $ref: "#/components/parameters/CsrfToken" }],
+        responses: { "201": { description: Destination created } },
+      }
+  /admin/destinations/{id}:
+    put:
+      {
+        tags: [Admin catalogue],
+        security: [{ cookieAuth: [] }],
+        parameters:
+          [
+            { $ref: "#/components/parameters/Id" },
+            { $ref: "#/components/parameters/CsrfToken" },
+          ],
+        responses: { "200": { description: Destination updated } },
+      }
+    delete:
+      {
+        tags: [Admin catalogue],
+        security: [{ cookieAuth: [] }],
+        parameters:
+          [
+            { $ref: "#/components/parameters/Id" },
+            { $ref: "#/components/parameters/CsrfToken" },
+          ],
+        responses: { "204": { description: Destination archived } },
+      }
+  /admin/categories:
+    get:
+      {
+        tags: [Admin catalogue],
+        security: [{ cookieAuth: [] }],
+        responses: { "200": { description: All categories } },
+      }
+    post:
+      {
+        tags: [Admin catalogue],
+        security: [{ cookieAuth: [] }],
+        parameters: [{ $ref: "#/components/parameters/CsrfToken" }],
+        responses: { "201": { description: Category created } },
+      }
+  /admin/categories/{id}:
+    put:
+      {
+        tags: [Admin catalogue],
+        security: [{ cookieAuth: [] }],
+        parameters:
+          [
+            { $ref: "#/components/parameters/Id" },
+            { $ref: "#/components/parameters/CsrfToken" },
+          ],
+        responses: { "200": { description: Category updated } },
+      }
+    delete:
+      {
+        tags: [Admin catalogue],
+        security: [{ cookieAuth: [] }],
+        parameters:
+          [
+            { $ref: "#/components/parameters/Id" },
+            { $ref: "#/components/parameters/CsrfToken" },
+          ],
+        responses: { "204": { description: Category archived } },
+      }
+  /admin/inquiries:
+    get:
+      tags: [Enquiries]
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - { in: query, name: q, schema: { type: string, maxLength: 120 } }
+        - {
+            in: query,
+            name: status,
+            schema:
+              {
+                type: string,
+                enum: [NEW, CONTACTED, QUOTED, CONFIRMED, CLOSED, LOST],
+              },
+          }
+        - {
+            in: query,
+            name: type,
+            schema:
+              {
+                type: string,
+                enum: [CONTACT, PACKAGE_ENQUIRY, BOOKING_REQUEST],
+              },
+          }
+        - { in: query, name: package, schema: { type: string, maxLength: 180 } }
+        - { in: query, name: from, schema: { type: string, format: date } }
+        - { in: query, name: to, schema: { type: string, format: date } }
+        - { $ref: "#/components/parameters/Page" }
+        - { $ref: "#/components/parameters/PageSize" }
+      responses: { "200": { description: Sales-authorized bounded lead list } }
+  /admin/inquiries/export.csv:
+    get:
+      tags: [Enquiries]
+      security: [{ cookieAuth: [] }]
+      responses: { "200": { description: Formula-injection-safe CSV export } }
+  /admin/inquiries/{id}:
+    get:
+      tags: [Enquiries]
+      security: [{ cookieAuth: [] }]
+      parameters: [{ $ref: "#/components/parameters/Id" }]
+      responses:
+        {
+          "200":
+            {
+              description: "Private lead detail, notes, history and redacted delivery state",
+            },
+        }
+  /admin/inquiries/{id}/status:
+    patch:
+      tags: [Enquiries]
+      security: [{ cookieAuth: [] }]
+      parameters:
+        [
+          { $ref: "#/components/parameters/Id" },
+          { $ref: "#/components/parameters/CsrfToken" },
+        ]
+      responses: { "200": { description: Audited valid status transition } }
+  /admin/inquiries/{id}/notes:
+    post:
+      tags: [Enquiries]
+      security: [{ cookieAuth: [] }]
+      parameters:
+        [
+          { $ref: "#/components/parameters/Id" },
+          { $ref: "#/components/parameters/CsrfToken" },
+        ]
+      responses: { "201": { description: Private staff note created } }
+  /admin/inquiries/{id}/assignment:
+    patch:
+      tags: [Enquiries]
+      security: [{ cookieAuth: [] }]
+      parameters:
+        [
+          { $ref: "#/components/parameters/Id" },
+          { $ref: "#/components/parameters/CsrfToken" },
+        ]
+      responses: { "200": { description: Lead assignment updated } }
+  /admin/media:
+    get:
+      tags: [Admin content]
+      security: [{ cookieAuth: [] }]
+      responses: { "200": { description: Bounded protected media library } }
+    post:
+      tags: [Admin content]
+      security: [{ cookieAuth: [] }]
+      parameters: [{ $ref: "#/components/parameters/CsrfToken" }]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file, altText]
+              properties:
+                file: { type: string, format: binary }
+                altText: { type: string, maxLength: 300 }
+                visibility: { type: string, enum: [PUBLIC, PRIVATE] }
+      responses:
+        "201":
+          {
+            description: "Valid raster decoded, metadata stripped and re-encoded to WebP, or a detected PDF stored for attachment-only delivery",
+          }
+        "415": { $ref: "#/components/responses/Error" }
+  /admin/media/{id}:
+    patch:
+      {
+        tags: [Admin content],
+        security: [{ cookieAuth: [] }],
+        parameters:
+          [
+            { $ref: "#/components/parameters/Id" },
+            { $ref: "#/components/parameters/CsrfToken" },
+          ],
+        responses:
+          { "200": { description: Media metadata or visibility updated } },
+      }
+    delete:
+      {
+        tags: [Admin content],
+        security: [{ cookieAuth: [] }],
+        parameters:
+          [
+            { $ref: "#/components/parameters/Id" },
+            { $ref: "#/components/parameters/CsrfToken" },
+          ],
+        responses:
+          {
+            "204": { description: Unreferenced media removed },
+            "409": { $ref: "#/components/responses/Error" },
+          },
+      }
+  /admin/media/{id}/file:
+    get:
+      {
+        tags: [Admin content],
+        security: [{ cookieAuth: [] }],
+        parameters: [{ $ref: "#/components/parameters/Id" }],
+        responses:
+          {
+            "200":
+              {
+                description: Protected private or public media bytes; PDFs use attachment disposition and sandbox CSP,
+              },
+          },
+      }
+  /media/{id}:
+    get:
+      servers: [{ url: / }]
+      tags: [Public content]
+      summary: Public media bytes
+      parameters: [{ $ref: "#/components/parameters/Id" }]
+      responses:
+        "200":
+          {
+            description: Explicitly public raster bytes or attachment-only PDF bytes,
+          }
+        "404": { $ref: "#/components/responses/Error" }
+  /admin/users:
+    get:
+      {
+        tags: [Admin operations],
+        security: [{ cookieAuth: [] }],
+        responses:
+          {
+            "200":
+              { description: Explicit user DTOs without hashes or sessions },
+          },
+      }
+    post:
+      {
+        tags: [Admin operations],
+        security: [{ cookieAuth: [] }],
+        parameters: [{ $ref: "#/components/parameters/CsrfToken" }],
+        responses:
+          { "201": { description: Admin user created with Argon2id password } },
+      }
+  /admin/assignees:
+    get:
+      {
+        tags: [Admin operations],
+        security: [{ cookieAuth: [] }],
+        responses:
+          {
+            "200":
+              {
+                description: Active Sales Agent and Super Admin assignment options,
+              },
+          },
+      }
+  /admin/users/{id}:
+    put:
+      {
+        tags: [Admin operations],
+        security: [{ cookieAuth: [] }],
+        parameters:
+          [
+            { $ref: "#/components/parameters/Id" },
+            { $ref: "#/components/parameters/CsrfToken" },
+          ],
+        responses:
+          {
+            "200": { description: User updated and affected sessions revoked },
+            "409": { description: Last active Super Admin protected },
+          },
+      }
+  /admin/audit-logs:
+    get:
+      {
+        tags: [Admin operations],
+        security: [{ cookieAuth: [] }],
+        responses: { "200": { description: Super-Admin-only audit page } },
+      }
+  /admin/notifications:
+    get:
+      {
+        tags: [Admin operations],
+        security: [{ cookieAuth: [] }],
+        responses: { "200": { description: Redacted outbox delivery state } },
+      }
+  /admin/notifications/{id}/retry:
+    post:
+      {
+        tags: [Admin operations],
+        security: [{ cookieAuth: [] }],
+        parameters:
+          [
+            { $ref: "#/components/parameters/Id" },
+            { $ref: "#/components/parameters/CsrfToken" },
+          ],
+        responses:
+          { "202": { description: Failed notification queued for retry } },
+      }
+  /admin/pages:
+    get:
+      {
+        tags: [Admin content],
+        security: [{ cookieAuth: [] }],
+        responses: { "200": { description: All content pages } },
+      }
+    post:
+      {
+        tags: [Admin content],
+        security: [{ cookieAuth: [] }],
+        parameters: [{ $ref: "#/components/parameters/CsrfToken" }],
+        responses: { "201": { description: Sanitized content page created } },
+      }
+  /admin/pages/{id}:
+    put:
+      {
+        tags: [Admin content],
+        security: [{ cookieAuth: [] }],
+        parameters:
+          [
+            { $ref: "#/components/parameters/Id" },
+            { $ref: "#/components/parameters/CsrfToken" },
+          ],
+        responses: { "200": { description: Sanitized page updated } },
+      }
+    delete:
+      {
+        tags: [Admin content],
+        security: [{ cookieAuth: [] }],
+        parameters:
+          [
+            { $ref: "#/components/parameters/Id" },
+            { $ref: "#/components/parameters/CsrfToken" },
+          ],
+        responses: { "204": { description: Page archived } },
+      }
+  /admin/blog/categories:
+    get:
+      {
+        tags: [Admin content],
+        security: [{ cookieAuth: [] }],
+        responses: { "200": { description: All blog categories } },
+      }
+    post:
+      {
+        tags: [Admin content],
+        security: [{ cookieAuth: [] }],
+        parameters: [{ $ref: "#/components/parameters/CsrfToken" }],
+        responses: { "201": { description: Blog category created } },
+      }
+  /admin/blog/categories/{id}:
+    put:
+      {
+        tags: [Admin content],
+        security: [{ cookieAuth: [] }],
+        parameters:
+          [
+            { $ref: "#/components/parameters/Id" },
+            { $ref: "#/components/parameters/CsrfToken" },
+          ],
+        responses: { "200": { description: Blog category updated } },
+      }
+    delete:
+      {
+        tags: [Admin content],
+        security: [{ cookieAuth: [] }],
+        parameters:
+          [
+            { $ref: "#/components/parameters/Id" },
+            { $ref: "#/components/parameters/CsrfToken" },
+          ],
+        responses: { "204": { description: Blog category archived } },
+      }
+  /admin/blog/posts:
+    get:
+      {
+        tags: [Admin content],
+        security: [{ cookieAuth: [] }],
+        responses: { "200": { description: All protected articles } },
+      }
+    post:
+      {
+        tags: [Admin content],
+        security: [{ cookieAuth: [] }],
+        parameters: [{ $ref: "#/components/parameters/CsrfToken" }],
+        responses:
+          { "201": { description: Sanitized article and relations created } },
+      }
+  /admin/blog/posts/{id}:
+    put:
+      {
+        tags: [Admin content],
+        security: [{ cookieAuth: [] }],
+        parameters:
+          [
+            { $ref: "#/components/parameters/Id" },
+            { $ref: "#/components/parameters/CsrfToken" },
+          ],
+        responses:
+          { "200": { description: Sanitized article and relations updated } },
+      }
+    delete:
+      {
+        tags: [Admin content],
+        security: [{ cookieAuth: [] }],
+        parameters:
+          [
+            { $ref: "#/components/parameters/Id" },
+            { $ref: "#/components/parameters/CsrfToken" },
+          ],
+        responses: { "204": { description: Article archived } },
+      }
+  /admin/blog/tags:
+    get:
+      {
+        tags: [Admin content],
+        security: [{ cookieAuth: [] }],
+        responses: { "200": { description: Tags } },
+      }
+    post:
+      {
+        tags: [Admin content],
+        security: [{ cookieAuth: [] }],
+        parameters: [{ $ref: "#/components/parameters/CsrfToken" }],
+        responses: { "201": { description: Tag created } },
+      }
+  /admin/blog/tags/{id}:
+    put:
+      {
+        tags: [Admin content],
+        security: [{ cookieAuth: [] }],
+        parameters:
+          [
+            { $ref: "#/components/parameters/Id" },
+            { $ref: "#/components/parameters/CsrfToken" },
+          ],
+        responses: { "200": { description: Tag updated } },
+      }
+  /admin/home/sections:
+    get:
+      {
+        tags: [Admin content],
+        security: [{ cookieAuth: [] }],
+        responses: { "200": { description: All typed homepage sections } },
+      }
+    post:
+      {
+        tags: [Admin content],
+        security: [{ cookieAuth: [] }],
+        parameters: [{ $ref: "#/components/parameters/CsrfToken" }],
+        responses: { "201": { description: Homepage section created } },
+      }
+  /admin/home/sections/{id}:
+    put:
+      {
+        tags: [Admin content],
+        security: [{ cookieAuth: [] }],
+        parameters:
+          [
+            { $ref: "#/components/parameters/Id" },
+            { $ref: "#/components/parameters/CsrfToken" },
+          ],
+        responses: { "200": { description: Homepage section updated } },
+      }
+    delete:
+      {
+        tags: [Admin content],
+        security: [{ cookieAuth: [] }],
+        parameters:
+          [
+            { $ref: "#/components/parameters/Id" },
+            { $ref: "#/components/parameters/CsrfToken" },
+          ],
+        responses:
+          { "204": { description: Homepage section archived and hidden } },
+      }
+  /admin/faqs:
+    get:
+      {
+        tags: [Admin content],
+        security: [{ cookieAuth: [] }],
+        responses: { "200": { description: All FAQs } },
+      }
+    post:
+      {
+        tags: [Admin content],
+        security: [{ cookieAuth: [] }],
+        parameters: [{ $ref: "#/components/parameters/CsrfToken" }],
+        responses: { "201": { description: FAQ created } },
+      }
+  /admin/faqs/{id}:
+    put:
+      {
+        tags: [Admin content],
+        security: [{ cookieAuth: [] }],
+        parameters:
+          [
+            { $ref: "#/components/parameters/Id" },
+            { $ref: "#/components/parameters/CsrfToken" },
+          ],
+        responses: { "200": { description: FAQ updated } },
+      }
+    delete:
+      {
+        tags: [Admin content],
+        security: [{ cookieAuth: [] }],
+        parameters:
+          [
+            { $ref: "#/components/parameters/Id" },
+            { $ref: "#/components/parameters/CsrfToken" },
+          ],
+        responses: { "204": { description: FAQ archived } },
+      }
+  /admin/testimonials:
+    get:
+      {
+        tags: [Admin content],
+        security: [{ cookieAuth: [] }],
+        responses:
+          {
+            "200":
+              { description: All testimonials including unapproved drafts },
+          },
+      }
+    post:
+      {
+        tags: [Admin content],
+        security: [{ cookieAuth: [] }],
+        parameters: [{ $ref: "#/components/parameters/CsrfToken" }],
+        responses:
+          { "201": { description: Testimonial created with consent rule } },
+      }
+  /admin/testimonials/{id}:
+    put:
+      {
+        tags: [Admin content],
+        security: [{ cookieAuth: [] }],
+        parameters:
+          [
+            { $ref: "#/components/parameters/Id" },
+            { $ref: "#/components/parameters/CsrfToken" },
+          ],
+        responses: { "200": { description: Testimonial updated } },
+      }
+    delete:
+      {
+        tags: [Admin content],
+        security: [{ cookieAuth: [] }],
+        parameters:
+          [
+            { $ref: "#/components/parameters/Id" },
+            { $ref: "#/components/parameters/CsrfToken" },
+          ],
+        responses:
+          { "204": { description: Testimonial archived and unapproved } },
+      }
+  /admin/settings/{key}:
+    put:
+      {
+        tags: [Admin content],
+        security: [{ cookieAuth: [] }],
+        parameters:
+          [
+            { in: path, name: key, required: true, schema: { type: string } },
+            { $ref: "#/components/parameters/CsrfToken" },
+          ],
+        responses:
+          {
+            "200":
+              {
+                description: Setting updated; secret-like keys cannot be public,
+              },
+          },
+      }
+  /admin/settings:
+    get:
+      {
+        tags: [Admin content],
+        security: [{ cookieAuth: [] }],
+        responses: { "200": { description: All admin settings } },
+      }
+  /admin/navigation:
+    get:
+      {
+        tags: [Admin content],
+        security: [{ cookieAuth: [] }],
+        responses: { "200": { description: All navigation menus } },
+      }
+  /admin/navigation/{key}:
+    put:
+      {
+        tags: [Admin content],
+        security: [{ cookieAuth: [] }],
+        parameters:
+          [
+            { in: path, name: key, required: true, schema: { type: string } },
+            { $ref: "#/components/parameters/CsrfToken" },
+          ],
+        responses:
+          { "200": { description: Validated navigation menu replaced } },
+      }
+  /admin/gallery/albums:
+    get:
+      {
+        tags: [Admin content],
+        security: [{ cookieAuth: [] }],
+        responses: { "200": { description: All albums and media relations } },
+      }
+    post:
+      {
+        tags: [Admin content],
+        security: [{ cookieAuth: [] }],
+        parameters: [{ $ref: "#/components/parameters/CsrfToken" }],
+        responses: { "201": { description: Gallery album created } },
+      }
+  /admin/gallery/albums/{id}:
+    put:
+      {
+        tags: [Admin content],
+        security: [{ cookieAuth: [] }],
+        parameters:
+          [
+            { $ref: "#/components/parameters/Id" },
+            { $ref: "#/components/parameters/CsrfToken" },
+          ],
+        responses: { "200": { description: Gallery album updated } },
+      }
+    delete:
+      {
+        tags: [Admin content],
+        security: [{ cookieAuth: [] }],
+        parameters:
+          [
+            { $ref: "#/components/parameters/Id" },
+            { $ref: "#/components/parameters/CsrfToken" },
+          ],
+        responses: { "204": { description: Gallery album archived } },
+      }
+components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: br_admin_session
+      description: Environment-configured opaque session cookie; never a browser-storage token.
+  parameters:
+    Id:
+      in: path
+      name: id
+      required: true
+      schema: { type: string, maxLength: 30 }
+    Slug:
+      in: path
+      name: slug
+      required: true
+      schema: { type: string, maxLength: 180 }
+    Page:
+      in: query
+      name: page
+      schema: { type: integer, minimum: 1, maximum: 1000, default: 1 }
+    PageSize:
+      in: query
+      name: pageSize
+      schema: { type: integer, minimum: 1, maximum: 48, default: 12 }
+    CsrfToken:
+      in: header
+      name: x-csrf-token
+      required: true
+      schema: { type: string }
+    IdempotencyKey:
+      in: header
+      name: idempotency-key
+      required: true
+      schema: { type: string, minLength: 16, maxLength: 128 }
+  schemas:
+    LoginInput:
+      type: object
+      additionalProperties: false
+      required: [email, password]
+      properties:
+        email: { type: string, format: email, maxLength: 254 }
+        password: { type: string, maxLength: 256 }
+    InquiryInput:
+      type: object
+      additionalProperties: false
+      required: [type, name, email, message, privacyAccepted, policyVersion]
+      properties:
+        type:
+          { type: string, enum: [CONTACT, PACKAGE_ENQUIRY, BOOKING_REQUEST] }
+        name: { type: string, minLength: 2, maxLength: 120 }
+        email: { type: string, format: email, maxLength: 254 }
+        phone: { type: string, maxLength: 40 }
+        subject: { type: string, maxLength: 200 }
+        message: { type: string, minLength: 10, maxLength: 5000 }
+        packageSlug: { type: string, maxLength: 180 }
+        departureId: { type: string, maxLength: 30 }
+        preferredStartDate: { type: string, format: date }
+        adultCount: { type: integer, minimum: 1, maximum: 50 }
+        childCount: { type: integer, minimum: 0, maximum: 50 }
+        budget: { type: number, minimum: 0 }
+        sourcePath: { type: string, maxLength: 500 }
+        privacyAccepted: { type: boolean, const: true }
+        policyVersion: { type: string, maxLength: 64 }
+    ErrorEnvelope:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message, requestId]
+          properties:
+            code: { type: string }
+            message: { type: string }
+            fields:
+              {
+                type: object,
+                additionalProperties: { type: array, items: { type: string } },
+              }
+            requestId: { type: string }
+  responses:
+    Error:
+      description: Safe API error envelope
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorEnvelope" }

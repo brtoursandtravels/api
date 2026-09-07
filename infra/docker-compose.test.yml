@@ -1,0 +1,31 @@
+name: br-tours-test-services
+
+services:
+  mysql-test:
+    image: mysql:8.4.11
+    env_file:
+      - ../.env.test
+    ports:
+      - "127.0.0.1:3307:3306"
+    tmpfs:
+      - /var/lib/mysql
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "mysqladmin ping -h 127.0.0.1 -u root -p$$MYSQL_ROOT_PASSWORD --silent",
+        ]
+      interval: 3s
+      timeout: 5s
+      retries: 30
+      start_period: 15s
+
+  mailpit-test:
+    image: ghcr.io/axllent/mailpit:v1.30.6
+    environment:
+      MP_MAX_MESSAGES: "100"
+      MP_MAX_MESSAGE_SIZE: "5"
+      MP_BLOCK_REMOTE_CSS_AND_FONTS: "true"
+    ports:
+      - "127.0.0.1:1026:1025"
+      - "127.0.0.1:8026:8025"
