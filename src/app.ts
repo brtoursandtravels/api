@@ -209,3 +209,5 @@ const errorHandler: ErrorRequestHandler = (
   });
 };
 app.use(errorHandler);
+
+export default app;

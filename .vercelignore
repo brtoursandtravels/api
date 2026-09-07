@@ -1,0 +1,11 @@
+.env*
+.vercel/
+dist/
+node_modules/
+src/generated/prisma/
+storage/
+media/
+test-results/
+playwright-report/
+*.log
+*.tsbuildinfo

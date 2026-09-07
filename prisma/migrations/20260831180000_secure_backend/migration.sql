@@ -1,5 +1,5 @@
 -- AlterTable
-ALTER TABLE `enquiry` ADD COLUMN `adultCount` INTEGER NULL,
+ALTER TABLE `Enquiry` ADD COLUMN `adultCount` INTEGER NULL,
     ADD COLUMN `budget` DECIMAL(12, 2) NULL,
     ADD COLUMN `childCount` INTEGER NULL,
     ADD COLUMN `currency` CHAR(3) NOT NULL DEFAULT 'INR',
