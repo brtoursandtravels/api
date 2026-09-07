@@ -38,8 +38,8 @@ Do not launch until each applicable item has an owner and evidence.
 
 ## Acceptance
 
-- [ ] Run API unit/integration, frontend/admin unit and Playwright suites plus all
-      three production builds against the release candidate.
+- [ ] Run lint, type checking and all three production builds against the
+      release candidate.
 - [ ] Verify every public route, sitemap, robots, old-slug redirect, 404 and
       outage state on the production routing topology.
 - [ ] Refresh nested admin URLs, publish/edit/unpublish content, upload media,

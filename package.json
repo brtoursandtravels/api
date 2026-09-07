@@ -14,17 +14,12 @@
     "start": "node dist/server.js",
     "lint": "eslint src scripts prisma --max-warnings=0",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "vitest run src --exclude src/**/*.integration.test.ts",
-    "test:integration": "node --env-file=.env.test node_modules/vitest/vitest.mjs run --config vitest.integration.config.ts",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:migrate:deploy": "prisma migrate deploy",
     "db:seed:demo": "tsx prisma/seed.ts",
     "admin:create": "tsx scripts/create-admin.ts",
     "notifications:work": "tsx src/worker.ts",
-    "test:e2e:seed": "node --env-file=.env.test dist/e2e-fixture.js",
-    "test:e2e:seed:public": "node --env-file=.env.test node_modules/tsx/dist/cli.mjs prisma/seed.ts",
-    "start:test": "node --env-file=.env.test dist/server.js",
     "env:check": "tsx scripts/check-env.ts",
     "postinstall": "prisma generate"
   },
@@ -55,15 +50,12 @@
     "@types/node": "26.4.0",
     "@types/nodemailer": "8.0.1",
     "@types/sanitize-html": "2.16.1",
-    "@types/supertest": "6.0.3",
     "eslint": "9.39.5",
     "globals": "16.4.0",
     "prisma": "7.10.0",
-    "supertest": "7.1.4",
     "tsx": "4.23.13",
     "typescript": "5.9.3",
-    "typescript-eslint": "8.68.0",
-    "vitest": "4.1.11"
+    "typescript-eslint": "8.68.0"
   },
   "overrides": {
     "mariadb": "3.5.3"

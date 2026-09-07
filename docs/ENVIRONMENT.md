@@ -4,9 +4,7 @@
 
 .env is local and ignored. It owns DATABASE_URL, MySQL bootstrap values, API
 port, allowed origins, session settings, demo guards, media path, SMTP settings
-and worker polling. .env.example, .env.test.example and
-.env.production.example document safe shapes without real production secrets.
-.env.test is a local ignored test configuration.
+and worker polling.
 
 Production requires a secret manager or orchestrator injection for database,
 session and SMTP secrets. Do not copy local passwords into production.
@@ -33,8 +31,6 @@ secret in this file.
 | MySQL                       |                   3306 |
 | Mailpit SMTP                |                   1025 |
 | Mailpit UI                  |                   8025 |
-| Dedicated local test schema | 3306 (`br_tours_test`) |
-| Optional Compose test MySQL |                   3307 |
 
 Session TTL, CSRF TTL, reset-token TTL, media URL/size limits and optional SMTP
 authentication are API-only values. Local media defaults to

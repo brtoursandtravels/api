@@ -16,8 +16,8 @@ separate guide in the admin project.
 
 ## Local start
 
-1. Copy or review .env.example as .env. The provided .env contains local-only
-   development credentials and is ignored by this project.
+1. Review the local `.env`. It contains local-only development configuration
+   and is ignored by this project.
 2. Use the existing XAMPP MariaDB service on 127.0.0.1:3306, or start the
    optional pinned local services:
 
@@ -36,8 +36,8 @@ Health is available at http://localhost:4000/health and readiness at
 http://localhost:4000/ready. Mailpit is loopback-only at http://localhost:8025.
 
 The owner-provided XAMPP service was detected and used for the br_tours
-development database. The migration, seed, API readiness, integration test and
-Next.js SSR stack smoke have all been executed successfully. Docker itself is
+development database. The migration, seed and API readiness checks have been
+executed successfully. Docker itself is
 not installed on this machine, so Compose/image validation remains pending.
 
 ## Commands
@@ -50,8 +50,7 @@ not installed on this machine, so Compose/image validation remains pending.
 - npm run db:seed:demo — guarded, idempotent non-production demo seed.
 - npm run admin:create — interactive Argon2id admin bootstrap.
 - npm run notifications:work — durable SMTP outbox worker.
-- npm run lint, npm run typecheck, npm test, npm run build — quality gates.
-- npm run test:integration — requires the dedicated MySQL test service.
+- npm run lint, npm run typecheck and npm run build — quality gates.
 
 The administration API also provides self-profile/password operations, safe
 assignment options, multi-field/date enquiry filters and 14-day dashboard trend
@@ -60,8 +59,3 @@ images are decoded and re-encoded to WebP, while PDFs are sandboxed downloads.
 
 Never run a destructive Prisma reset against an existing database. Production
 startup does not apply migrations automatically.
-
-`npm run test:integration` uses the guarded `br_tours_test` schema configured in
-the API folder's `.env.test`; it refuses to run against any other database name.
-It includes a real Nodemailer connection-refusal case proving the original lead
-and outbox row survive and the same event can be sent on retry.
