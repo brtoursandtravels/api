@@ -8,6 +8,7 @@ import { z } from "zod";
 import { prisma } from "../database.js";
 import { env } from "../env.js";
 import { HttpError } from "../lib/http-error.js";
+import { publicMediaUrl } from "../lib/media-url.js";
 import { randomToken } from "../lib/security.js";
 import {
   optionalSession,
@@ -44,6 +45,7 @@ function absoluteMediaPath(storageKey: string) {
 
 function mediaDto(record: {
   id: string;
+  storageKey: string;
   originalName: string;
   mimeType: string;
   sizeBytes: bigint;
@@ -60,7 +62,7 @@ function mediaDto(record: {
 }) {
   return {
     id: record.id,
-    url: `${env.MEDIA_PUBLIC_BASE_URL}/${record.id}`,
+    url: publicMediaUrl(record),
     originalName: record.originalName,
     mimeType: record.mimeType,
     sizeBytes: record.sizeBytes.toString(),

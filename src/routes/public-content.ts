@@ -4,6 +4,7 @@ import { prisma } from "../database.js";
 import { env } from "../env.js";
 import type { Prisma } from "../generated/prisma/client.js";
 import { HttpError } from "../lib/http-error.js";
+import { publicMediaUrl } from "../lib/media-url.js";
 import { readingMinutes, sanitizeRichText } from "../lib/rich-text.js";
 
 const pageQuerySchema = z.object({
@@ -34,7 +35,7 @@ function mediaDto(asset: {
 }) {
   return {
     id: asset.id,
-    url: `${env.MEDIA_PUBLIC_BASE_URL}/${asset.id}`,
+    url: publicMediaUrl(asset),
     mimeType: asset.mimeType,
     width: asset.width,
     height: asset.height,

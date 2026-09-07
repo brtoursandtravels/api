@@ -1,5 +1,4 @@
 import type { PackageCard, PackageDetail } from "../contracts.js";
-import { env } from "../env.js";
 import type {
   Category,
   Departure,
@@ -13,6 +12,7 @@ import type {
   Prisma,
 } from "../generated/prisma/client.js";
 import type { PackageInclude } from "../generated/prisma/models/Package.js";
+import { publicMediaUrl } from "./media-url.js";
 
 export const publicPackageInclude = {
   destinations: {
@@ -44,7 +44,7 @@ export type PublicPackageRecord = Package & {
 function publicMedia(asset: MediaAsset) {
   return {
     id: asset.id,
-    url: `${env.MEDIA_PUBLIC_BASE_URL}/${asset.id}`,
+    url: publicMediaUrl(asset),
     width: asset.width,
     height: asset.height,
     altText: asset.altText,
@@ -135,7 +135,7 @@ export function toPackageDetail(
       record.brochureMedia.mimeType === "application/pdf"
         ? {
             id: record.brochureMedia.id,
-            url: `${env.MEDIA_PUBLIC_BASE_URL}/${record.brochureMedia.id}`,
+            url: publicMediaUrl(record.brochureMedia),
             originalName: record.brochureMedia.originalName,
             mimeType: "application/pdf" as const,
           }
