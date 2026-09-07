@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import cors from "cors";
 import express, { type ErrorRequestHandler } from "express";
-import helmet from "helmet";
+import * as helmet from "helmet";
 import multer from "multer";
 import { pinoHttp } from "pino-http";
 import { ZodError } from "zod";
@@ -45,7 +45,7 @@ app.use((request, response, next) => {
   next();
 });
 app.use(
-  helmet({
+  helmet.default({
     strictTransportSecurity:
       env.NODE_ENV === "production"
         ? { maxAge: 31_536_000, includeSubDomains: true }
