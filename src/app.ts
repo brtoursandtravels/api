@@ -143,6 +143,10 @@ const errorHandler: ErrorRequestHandler = (
   _next,
 ) => {
   void _next;
+  // A transient or validation error must never replace a successful public
+  // response in an intermediary cache.
+  response.setHeader("Cache-Control", "private, no-store");
+  response.removeHeader("Vercel-CDN-Cache-Control");
   const requestId = String(response.locals.requestId ?? "unknown");
   if (error instanceof ZodError) {
     response.status(400).json({

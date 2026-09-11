@@ -14,7 +14,7 @@ import type {
 import type { PackageInclude } from "../generated/prisma/models/Package.js";
 import { publicMediaUrl } from "./media-url.js";
 
-export const publicPackageInclude = {
+export const publicPackageCardInclude = {
   destinations: {
     orderBy: { sortOrder: "asc" },
     include: { destination: true },
@@ -29,15 +29,23 @@ export const publicPackageInclude = {
     orderBy: { sortOrder: "asc" },
     include: { mediaAsset: true },
   },
+} satisfies PackageInclude;
+
+export const publicPackageDetailInclude = {
+  ...publicPackageCardInclude,
+  itineraryDays: { orderBy: { dayNumber: "asc" } },
   brochureMedia: true,
 } satisfies PackageInclude;
 
-export type PublicPackageRecord = Package & {
+export type PublicPackageCardRecord = Package & {
   destinations: Array<PackageDestination & { destination: Destination }>;
   categories: Array<PackageCategory & { category: Category }>;
-  itineraryDays: ItineraryDay[];
   departures: Departure[];
   media: Array<PackageMedia & { mediaAsset: MediaAsset }>;
+};
+
+export type PublicPackageRecord = PublicPackageCardRecord & {
+  itineraryDays: ItineraryDay[];
   brochureMedia: MediaAsset | null;
 };
 
@@ -59,7 +67,7 @@ function jsonStrings(value: Prisma.JsonValue): string[] {
 }
 
 function startingPrice(
-  record: PublicPackageRecord,
+  record: PublicPackageCardRecord,
   now: Date,
 ): PackageCard["startingPrice"] {
   if (record.priceBasis === "ON_REQUEST") return null;
@@ -86,7 +94,7 @@ function startingPrice(
 }
 
 export function toPackageCard(
-  record: PublicPackageRecord,
+  record: PublicPackageCardRecord,
   now: Date,
 ): PackageCard {
   return {

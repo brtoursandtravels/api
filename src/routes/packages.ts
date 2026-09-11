@@ -5,16 +5,19 @@ import { env } from "../env.js";
 import type { Prisma } from "../generated/prisma/client.js";
 import { HttpError } from "../lib/http-error.js";
 import {
-  publicPackageInclude,
+  publicPackageCardInclude,
+  publicPackageDetailInclude,
   toPackageCard,
   toPackageDetail,
+  type PublicPackageCardRecord,
   type PublicPackageRecord,
 } from "../lib/packages.js";
+import { publicReadCache } from "../middleware/public-cache.js";
 import { publicPackageWhere } from "../lib/publication.js";
 
 export const packageRouter = Router();
 
-packageRouter.get("/", async (request, response) => {
+packageRouter.get("/", publicReadCache, async (request, response) => {
   const query = packageListQuerySchema.parse(request.query);
   const now = new Date();
   const publicationWhere = publicPackageWhere(now, env.DEMO_MODE);
@@ -76,7 +79,7 @@ packageRouter.get("/", async (request, response) => {
   if (computedPriceQuery) {
     const records = await prisma.package.findMany({
       where,
-      include: publicPackageInclude,
+      include: publicPackageCardInclude,
       orderBy: { publishedAt: "desc" },
       take: 2001,
     });
@@ -87,7 +90,7 @@ packageRouter.get("/", async (request, response) => {
         "Add a destination, category or duration before sorting by price.",
       );
     }
-    const cards = (records as PublicPackageRecord[])
+    const cards = (records as PublicPackageCardRecord[])
       .map((record) => toPackageCard(record, now))
       .filter((card) => {
         const price = card.startingPrice
@@ -139,7 +142,7 @@ packageRouter.get("/", async (request, response) => {
     prisma.package.count({ where }),
     prisma.package.findMany({
       where,
-      include: publicPackageInclude,
+      include: publicPackageCardInclude,
       orderBy,
       skip: (query.page - 1) * query.pageSize,
       take: query.pageSize,
@@ -147,21 +150,22 @@ packageRouter.get("/", async (request, response) => {
   ]);
 
   response.json({
-    data: (records as PublicPackageRecord[]).map((record) =>
+    data: (records as PublicPackageCardRecord[]).map((record) =>
       toPackageCard(record, now),
     ),
     meta: { page: query.page, pageSize: query.pageSize, total },
   });
 });
 
-packageRouter.get("/:slug", async (request, response) => {
+packageRouter.get("/:slug", publicReadCache, async (request, response) => {
   const now = new Date();
+  const slug = String(request.params.slug);
   const record = await prisma.package.findFirst({
     where: {
       ...publicPackageWhere(now, env.DEMO_MODE),
-      slug: request.params.slug,
+      slug,
     },
-    include: publicPackageInclude,
+    include: publicPackageDetailInclude,
   });
 
   if (!record) {
@@ -169,11 +173,11 @@ packageRouter.get("/:slug", async (request, response) => {
       where: {
         entityType_oldSlug: {
           entityType: "Package",
-          oldSlug: request.params.slug,
+          oldSlug: slug,
         },
       },
     });
-    if (redirect?.isActive && redirect.targetSlug !== request.params.slug) {
+    if (redirect?.isActive && redirect.targetSlug !== slug) {
       const target = await prisma.package.findFirst({
         where: {
           ...publicPackageWhere(now, env.DEMO_MODE),
@@ -219,7 +223,7 @@ packageRouter.get("/:slug", async (request, response) => {
           : []),
       ],
     },
-    include: publicPackageInclude,
+    include: publicPackageCardInclude,
     orderBy: [
       { isFeatured: "desc" },
       { featuredOrder: "asc" },
@@ -230,7 +234,7 @@ packageRouter.get("/:slug", async (request, response) => {
   response.json({
     data: {
       ...toPackageDetail(typedRecord, now),
-      relatedPackages: (related as PublicPackageRecord[]).map((item) =>
+      relatedPackages: (related as PublicPackageCardRecord[]).map((item) =>
         toPackageCard(item, now),
       ),
     },

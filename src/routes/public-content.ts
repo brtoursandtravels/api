@@ -6,12 +6,17 @@ import type { Prisma } from "../generated/prisma/client.js";
 import { HttpError } from "../lib/http-error.js";
 import { publicMediaUrl } from "../lib/media-url.js";
 import { readingMinutes, sanitizeRichText } from "../lib/rich-text.js";
+import { publicReadCache } from "../middleware/public-cache.js";
 
 const pageQuerySchema = z.object({
   q: z.string().trim().max(120).optional(),
   category: z.string().trim().max(180).optional(),
   destination: z.string().trim().max(180).optional(),
   package: z.string().trim().max(180).optional(),
+  includeImages: z
+    .enum(["true", "false"])
+    .transform((value) => value === "true")
+    .default(false),
   page: z.coerce.number().int().min(1).max(1000).default(1),
   pageSize: z.coerce.number().int().min(1).max(48).default(12),
 });
@@ -46,7 +51,7 @@ function mediaDto(asset: {
 
 export const publicContentRouter = Router();
 
-publicContentRouter.get("/site", async (_request, response) => {
+publicContentRouter.get("/site", publicReadCache, async (_request, response) => {
   const [settings, menus] = await prisma.$transaction([
     prisma.setting.findMany({
       where: { isPublic: true },
@@ -79,7 +84,7 @@ publicContentRouter.get("/site", async (_request, response) => {
   });
 });
 
-publicContentRouter.get("/home", async (_request, response) => {
+publicContentRouter.get("/home", publicReadCache, async (_request, response) => {
   const now = new Date();
   const sections = await prisma.homepageSection.findMany({
     where: { ...published(now), isVisible: true },
@@ -99,7 +104,7 @@ publicContentRouter.get("/home", async (_request, response) => {
   });
 });
 
-publicContentRouter.get("/pages/:slug", async (request, response) => {
+publicContentRouter.get("/pages/:slug", publicReadCache, async (request, response) => {
   const slug = z.string().min(1).max(180).parse(request.params.slug);
   const page = await prisma.contentPage.findFirst({
     where: { slug, ...published(new Date()) },
@@ -120,7 +125,7 @@ publicContentRouter.get("/pages/:slug", async (request, response) => {
   });
 });
 
-publicContentRouter.get("/destinations", async (_request, response) => {
+publicContentRouter.get("/destinations", publicReadCache, async (_request, response) => {
   const records = await prisma.destination.findMany({
     where: published(new Date()),
     orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
@@ -136,7 +141,7 @@ publicContentRouter.get("/destinations", async (_request, response) => {
   });
 });
 
-publicContentRouter.get("/categories", async (_request, response) => {
+publicContentRouter.get("/categories", publicReadCache, async (_request, response) => {
   const records = await prisma.category.findMany({
     where: published(new Date()),
     orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
@@ -152,7 +157,7 @@ publicContentRouter.get("/categories", async (_request, response) => {
   });
 });
 
-publicContentRouter.get("/gallery/albums", async (request, response) => {
+publicContentRouter.get("/gallery/albums", publicReadCache, async (request, response) => {
   const query = pageQuerySchema.parse(request.query);
   const packageDestinations = query.package
     ? await prisma.package.findFirst({
@@ -185,7 +190,7 @@ publicContentRouter.get("/gallery/albums", async (request, response) => {
         images: {
           where: { mediaAsset: { visibility: "PUBLIC" } },
           orderBy: { sortOrder: "asc" },
-          take: 1,
+          ...(query.includeImages ? {} : { take: 1 }),
           include: { mediaAsset: true },
         },
       },
@@ -202,13 +207,16 @@ publicContentRouter.get("/gallery/albums", async (request, response) => {
       description: record.description,
       destination: record.destination,
       cover: record.images[0] ? mediaDto(record.images[0].mediaAsset) : null,
+      ...(query.includeImages
+        ? { images: record.images.map((image) => mediaDto(image.mediaAsset)) }
+        : {}),
       isDemo: record.isDemo,
     })),
     meta: { page: query.page, pageSize: query.pageSize, total },
   });
 });
 
-publicContentRouter.get("/gallery/albums/:slug", async (request, response) => {
+publicContentRouter.get("/gallery/albums/:slug", publicReadCache, async (request, response) => {
   const slug = z.string().min(1).max(180).parse(request.params.slug);
   const record = await prisma.galleryAlbum.findFirst({
     where: { slug, ...published(new Date()) },
@@ -240,7 +248,7 @@ publicContentRouter.get("/gallery/albums/:slug", async (request, response) => {
   });
 });
 
-publicContentRouter.get("/blog/categories", async (_request, response) => {
+publicContentRouter.get("/blog/categories", publicReadCache, async (_request, response) => {
   const records = await prisma.blogCategory.findMany({
     where: published(new Date()),
     orderBy: { name: "asc" },
@@ -255,10 +263,11 @@ publicContentRouter.get("/blog/categories", async (_request, response) => {
   });
 });
 
-publicContentRouter.get("/blog", async (request, response) => {
+publicContentRouter.get("/blog", publicReadCache, async (request, response) => {
   const query = pageQuerySchema.parse(request.query);
+  const now = new Date();
   const where: Prisma.BlogPostWhereInput = {
-    ...published(new Date()),
+    ...published(now),
     ...(query.category ? { category: { slug: query.category } } : {}),
     ...(query.q
       ? {
@@ -276,6 +285,15 @@ publicContentRouter.get("/blog", async (request, response) => {
       include: {
         category: { select: { slug: true, name: true } },
         coverMedia: true,
+        relatedTours: {
+          where: { package: { is: published(now) } },
+          take: 1,
+          select: {
+            package: {
+              select: { slug: true, title: true, days: true },
+            },
+          },
+        },
       },
       orderBy: [{ isFeatured: "desc" }, { publishedAt: "desc" }],
       skip: (query.page - 1) * query.pageSize,
@@ -298,13 +316,14 @@ publicContentRouter.get("/blog", async (request, response) => {
       author: record.publicAuthorName
         ? { name: record.publicAuthorName }
         : null,
+      relatedTour: record.relatedTours[0]?.package ?? null,
       isDemo: record.isDemo,
     })),
     meta: { page: query.page, pageSize: query.pageSize, total },
   });
 });
 
-publicContentRouter.get("/blog/:slug", async (request, response) => {
+publicContentRouter.get("/blog/:slug", publicReadCache, async (request, response) => {
   const slug = z.string().min(1).max(180).parse(request.params.slug);
   const now = new Date();
   const record = await prisma.blogPost.findFirst({
@@ -386,7 +405,7 @@ publicContentRouter.get("/blog/:slug", async (request, response) => {
   });
 });
 
-publicContentRouter.get("/faqs", async (request, response) => {
+publicContentRouter.get("/faqs", publicReadCache, async (request, response) => {
   const packageSlug = z
     .string()
     .trim()
@@ -413,7 +432,7 @@ publicContentRouter.get("/faqs", async (request, response) => {
   });
 });
 
-publicContentRouter.get("/testimonials", async (_request, response) => {
+publicContentRouter.get("/testimonials", publicReadCache, async (_request, response) => {
   const records = await prisma.testimonial.findMany({
     where: { ...published(new Date()), approved: true },
     orderBy: { sortOrder: "asc" },
