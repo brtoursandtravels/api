@@ -685,7 +685,10 @@ adminContentRouter.delete(
 const testimonialSchema = publicationSchema
   .extend({
     publicName: z.string().trim().min(2).max(120),
+    location: z.string().trim().max(120).nullable().optional(),
+    tripName: z.string().trim().max(160).nullable().optional(),
     quote: z.string().trim().min(10).max(5000),
+    rating: z.number().int().min(1).max(5).default(5),
     consentNotes: z.string().trim().max(5000).nullable().optional(),
     approved: z.boolean().default(false),
     sortOrder: z.number().int().min(0).max(10_000).default(0),
@@ -712,7 +715,10 @@ adminContentRouter.post(
     const record = await prisma.testimonial.create({
       data: {
         publicName: input.publicName,
+        location: input.location || null,
+        tripName: input.tripName || null,
         quote: input.quote,
+        rating: input.rating,
         consentNotes: input.consentNotes ?? null,
         approved: input.approved,
         sortOrder: input.sortOrder,
@@ -732,7 +738,10 @@ adminContentRouter.put(
         where: { id: z.string().max(30).parse(request.params.id) },
         data: {
           publicName: input.publicName,
+          location: input.location || null,
+          tripName: input.tripName || null,
           quote: input.quote,
+          rating: input.rating,
           consentNotes: input.consentNotes ?? null,
           approved: input.approved,
           sortOrder: input.sortOrder,

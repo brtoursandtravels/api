@@ -508,7 +508,10 @@ model Faq {
 model Testimonial {
   id           String            @id @default(cuid()) @db.VarChar(30)
   publicName   String            @db.VarChar(120)
+  location     String?           @db.VarChar(120)
+  tripName     String?           @db.VarChar(160)
   quote        String            @db.Text
+  rating       Int               @default(5) @db.UnsignedTinyInt
   consentNotes String?           @db.Text
   approved     Boolean           @default(false)
   status       PublicationStatus @default(DRAFT)

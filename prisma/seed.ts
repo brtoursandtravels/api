@@ -61,6 +61,36 @@ const generalFaqs = [
   ],
 ] as const;
 
+const demoTestimonials = [
+  {
+    id: "demo-testimonial-kashmir",
+    publicName: "Aarav & Meera",
+    location: "Mumbai",
+    tripName: "Kashmir Valley Retreat",
+    rating: 5,
+    quote:
+      "The itinerary felt relaxed without missing the places we cared about. The hotel choices suited our family, and every detail was explained clearly before the trip.",
+  },
+  {
+    id: "demo-testimonial-chardham",
+    publicName: "Sunita P.",
+    location: "Pune",
+    tripName: "Complete Char Dham Yatra",
+    rating: 5,
+    quote:
+      "The journey was planned at a comfortable pace for my parents. The team stayed in touch throughout and handled a weather-related route change calmly.",
+  },
+  {
+    id: "demo-testimonial-rajasthan",
+    publicName: "Rohan K.",
+    location: "Bengaluru",
+    tripName: "Rajasthan Heritage Journey",
+    rating: 5,
+    quote:
+      "We wanted history, local food and enough free time to explore. The final plan balanced all three, and the stays matched exactly what we had requested.",
+  },
+] as const;
+
 function dateOnlyAfter(days: number) {
   const now = new Date();
   return new Date(
@@ -436,12 +466,38 @@ async function seedEditorialContent(mediaByDestination: Map<string, string>) {
     create: {
       id: "demo-testimonial-draft",
       publicName: "Sample traveller",
+      location: "Mumbai",
+      tripName: "Sample journey",
       quote: "Unapproved sample testimonial. It must never appear publicly.",
+      rating: 5,
       approved: false,
       status: "DRAFT",
       isDemo: true,
     },
   });
+
+  for (const [sortOrder, testimonial] of demoTestimonials.entries()) {
+    const data = {
+      publicName: testimonial.publicName,
+      location: testimonial.location,
+      tripName: testimonial.tripName,
+      quote: testimonial.quote,
+      rating: testimonial.rating,
+      consentNotes:
+        "Fictional sample review created only to demonstrate the testimonial layout.",
+      approved: true,
+      sortOrder,
+      status: "PUBLISHED" as const,
+      publishedAt,
+      isDemo: true,
+    };
+    await prisma.testimonial.upsert({
+      where: { id: testimonial.id },
+      update: data,
+      create: { id: testimonial.id, ...data },
+    });
+  }
+
 }
 
 async function seedPublicExperience() {

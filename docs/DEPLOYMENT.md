@@ -65,6 +65,11 @@ Review every SQL migration and take a backup before `db:migrate:deploy`. Never
 run `prisma migrate reset` or the demo seed in production. Create the first
 administrator interactively only on a trusted terminal.
 
+`npm start` automatically runs `db:prepare:deploy` first. This regenerates the
+Prisma client, applies pending migrations, and runs the idempotent demo seed
+only when `NODE_ENV` is not `production` and `ALLOW_DEMO_SEED=true`. Production
+starts therefore apply schema updates without inserting sample reviews.
+
 ## systemd services
 
 Create `/etc/systemd/system/br-tours-api.service`:
@@ -81,7 +86,7 @@ User=brtours
 Group=brtours
 WorkingDirectory=/srv/br-tours/tours_and_travels_api
 EnvironmentFile=/etc/br-tours/api.env
-ExecStart=/usr/bin/node dist/server.js
+ExecStart=/usr/bin/npm start
 Restart=on-failure
 RestartSec=5
 NoNewPrivileges=true

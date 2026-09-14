@@ -1,0 +1,5 @@
+-- AlterTable
+ALTER TABLE `Testimonial`
+    ADD COLUMN `location` VARCHAR(120) NULL,
+    ADD COLUMN `tripName` VARCHAR(160) NULL,
+    ADD COLUMN `rating` TINYINT UNSIGNED NOT NULL DEFAULT 5;

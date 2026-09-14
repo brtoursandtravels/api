@@ -438,11 +438,15 @@ publicContentRouter.get("/testimonials", publicReadCache, async (_request, respo
     orderBy: { sortOrder: "asc" },
   });
   response.json({
-    data: records.map(({ id, publicName, quote, sortOrder }) => ({
+    data: records.map(({ id, publicName, location, tripName, quote, rating, sortOrder, isDemo }) => ({
       id,
       publicName,
+      location,
+      tripName,
       quote,
+      rating,
       sortOrder,
+      isDemo,
     })),
   });
 });
