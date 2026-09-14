@@ -256,6 +256,15 @@ adminMediaRouter.post(
   },
 );
 
+adminMediaRouter.get("/:id", async (request, response) => {
+  const record = await prisma.mediaAsset.findUnique({
+    where: { id: z.string().max(30).parse(request.params.id) },
+  });
+  if (!record)
+    throw new HttpError(404, "MEDIA_NOT_FOUND", "The media asset was not found.");
+  response.json({ data: mediaDto(record) });
+});
+
 adminMediaRouter.get("/:id/file", async (request, response) => {
   const record = await prisma.mediaAsset.findUnique({
     where: { id: z.string().max(30).parse(request.params.id) },

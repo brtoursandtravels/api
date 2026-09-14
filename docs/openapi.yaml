@@ -483,6 +483,17 @@ paths:
           }
         "415": { $ref: "#/components/responses/Error" }
   /admin/media/{id}:
+    get:
+      {
+        tags: [Admin content],
+        security: [{ cookieAuth: [] }],
+        parameters: [{ $ref: "#/components/parameters/Id" }],
+        responses:
+          {
+            "200": { description: Protected media metadata record },
+            "404": { $ref: "#/components/responses/Error" },
+          },
+      }
     patch:
       {
         tags: [Admin content],
