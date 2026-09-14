@@ -68,7 +68,10 @@ administrator interactively only on a trusted terminal.
 `npm start` automatically runs `db:prepare:deploy` first. This regenerates the
 Prisma client, applies pending migrations, and runs the idempotent demo seed
 only when `NODE_ENV` is not `production` and `ALLOW_DEMO_SEED=true`. Production
-starts therefore apply schema updates without inserting sample reviews.
+starts therefore skip the broad demo seed. The
+`20260914143000_published_sample_testimonials` migration installs three
+explicitly labelled sample review cards; replace them with consented customer
+reviews and archive the samples before launch sign-off.
 
 ## systemd services
 

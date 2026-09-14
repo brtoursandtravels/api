@@ -1,0 +1,75 @@
+-- Seed clearly disclosed sample testimonials for the production layout.
+INSERT INTO `Testimonial` (
+    `id`,
+    `publicName`,
+    `location`,
+    `tripName`,
+    `quote`,
+    `rating`,
+    `consentNotes`,
+    `approved`,
+    `status`,
+    `publishedAt`,
+    `isDemo`,
+    `sortOrder`,
+    `updatedAt`
+)
+VALUES
+    (
+        'demo-testimonial-kashmir',
+        'Aarav & Meera',
+        'Mumbai',
+        'Kashmir Valley Retreat',
+        'The itinerary felt relaxed without missing the places we cared about. The hotel choices suited our family, and every detail was explained clearly before the trip.',
+        5,
+        'Fictional sample review created only to demonstrate the testimonial layout.',
+        true,
+        'PUBLISHED',
+        CURRENT_TIMESTAMP(3),
+        true,
+        0,
+        CURRENT_TIMESTAMP(3)
+    ),
+    (
+        'demo-testimonial-chardham',
+        'Sunita P.',
+        'Pune',
+        'Complete Char Dham Yatra',
+        'The journey was planned at a comfortable pace for my parents. The team stayed in touch throughout and handled a weather-related route change calmly.',
+        5,
+        'Fictional sample review created only to demonstrate the testimonial layout.',
+        true,
+        'PUBLISHED',
+        CURRENT_TIMESTAMP(3),
+        true,
+        1,
+        CURRENT_TIMESTAMP(3)
+    ),
+    (
+        'demo-testimonial-rajasthan',
+        'Rohan K.',
+        'Bengaluru',
+        'Rajasthan Heritage Journey',
+        'We wanted history, local food and enough free time to explore. The final plan balanced all three, and the stays matched exactly what we had requested.',
+        5,
+        'Fictional sample review created only to demonstrate the testimonial layout.',
+        true,
+        'PUBLISHED',
+        CURRENT_TIMESTAMP(3),
+        true,
+        2,
+        CURRENT_TIMESTAMP(3)
+    )
+ON DUPLICATE KEY UPDATE
+    `publicName` = VALUES(`publicName`),
+    `location` = VALUES(`location`),
+    `tripName` = VALUES(`tripName`),
+    `quote` = VALUES(`quote`),
+    `rating` = VALUES(`rating`),
+    `consentNotes` = VALUES(`consentNotes`),
+    `approved` = VALUES(`approved`),
+    `status` = VALUES(`status`),
+    `publishedAt` = VALUES(`publishedAt`),
+    `isDemo` = VALUES(`isDemo`),
+    `sortOrder` = VALUES(`sortOrder`),
+    `updatedAt` = VALUES(`updatedAt`);
