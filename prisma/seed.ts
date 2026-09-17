@@ -501,6 +501,48 @@ async function seedEditorialContent(mediaByDestination: Map<string, string>) {
 }
 
 async function seedPublicExperience() {
+  const publicSettings = [
+    {
+      key: "contact.phone",
+      value: "+91 79907 21001",
+      description: "Public BR Tours and Travels contact number.",
+    },
+    {
+      key: "contact.whatsapp",
+      value: "+91 79907 21001",
+      description: "Public BR Tours and Travels WhatsApp number.",
+    },
+    {
+      key: "contact.address",
+      value:
+        "10, Natha Lal Park Society, Shree Kadi Nagrik Shakari Bank, Shak Market Road, Balol Nagar",
+      description: "Public BR Tours and Travels office address.",
+    },
+    {
+      key: "social.instagram",
+      value:
+        "https://www.instagram.com/br_tours_travels?stkn=ZnFsZ2E0dGlnajZs&utm_source=qr",
+      description: "Official BR Tours and Travels Instagram profile.",
+    },
+    {
+      key: "social.facebook",
+      value:
+        "https://www.facebook.com/share/1EdDpd2pfZ/?mibextid=wwXIfr",
+      description: "Official BR Tours and Travels Facebook page.",
+    },
+  ] as const;
+  for (const setting of publicSettings) {
+    await prisma.setting.upsert({
+      where: { key: setting.key },
+      update: {
+        value: setting.value,
+        isPublic: true,
+        description: setting.description,
+      },
+      create: { ...setting, isPublic: true },
+    });
+  }
+
   const pages = [
     {
       slug: "about-us",
