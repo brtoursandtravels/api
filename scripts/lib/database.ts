@@ -23,7 +23,11 @@ export function createOperationalPrisma() {
     throw new Error("DATABASE_URL is required.");
   }
 
-  const limit = Number(process.env.DATABASE_CONNECTION_LIMIT ?? "5");
+  const defaultLimit =
+    process.env.VERCEL || process.env.NODE_ENV === "production" ? "1" : "5";
+  const limit = Number(
+    process.env.DATABASE_CONNECTION_LIMIT ?? defaultLimit,
+  );
   const adapter = new PrismaMariaDb(connectionOptions(databaseUrl, limit));
   return new PrismaClient({ adapter });
 }

@@ -138,7 +138,7 @@ app.use((_request, _response, next) => {
 
 const errorHandler: ErrorRequestHandler = (
   error,
-  _request,
+  request,
   response,
   _next,
 ) => {
@@ -203,6 +203,11 @@ const errorHandler: ErrorRequestHandler = (
       return;
     }
   }
+
+  request.log.error(
+    { err: error, requestId },
+    "Unhandled request error",
+  );
 
   response.status(500).json({
     error: {
