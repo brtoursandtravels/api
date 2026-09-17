@@ -27,6 +27,11 @@ const stringList = z
   .max(100)
   .default([]);
 
+function jsonStringList(value: Prisma.JsonValue | null): string[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter((item): item is string => typeof item === "string");
+}
+
 const itinerarySchema = z.object({
   dayNumber: z.number().int().min(1).max(90),
   title: z.string().trim().min(1).max(200),
@@ -191,9 +196,9 @@ function adminPackageDto(record: AdminPackageRecord) {
     basePrice: record.basePrice?.toFixed(2) ?? null,
     currency: record.currency,
     priceBasis: record.priceBasis,
-    highlights: record.highlights,
-    inclusions: record.inclusions,
-    exclusions: record.exclusions,
+    highlights: jsonStringList(record.highlights),
+    inclusions: jsonStringList(record.inclusions),
+    exclusions: jsonStringList(record.exclusions),
     transportInformation: record.transportInformation,
     accommodationNotes: record.accommodationNotes,
     importantInformation: record.importantInformation,
@@ -222,7 +227,7 @@ function adminPackageDto(record: AdminPackageRecord) {
       dayNumber: day.dayNumber,
       title: day.title,
       description: day.description,
-      activities: day.activities,
+      activities: jsonStringList(day.activities),
       meals: day.meals,
       accommodation: day.accommodation,
     })),
@@ -643,8 +648,27 @@ const taxonomySchema = z
     publishedAt: optionalDateTimeSchema,
     sortOrder: z.number().int().min(0).max(10_000).default(0),
     isDemo: z.boolean().default(false),
+    coverMediaId: z.string().max(30).nullable().optional(),
   })
   .strict();
+
+async function verifyDestinationCoverMedia(coverMediaId?: string | null) {
+  if (!coverMediaId) return;
+  const count = await prisma.mediaAsset.count({
+    where: {
+      id: coverMediaId,
+      mimeType: { startsWith: "image/" },
+      visibility: "PUBLIC",
+    },
+  });
+  if (count !== 1) {
+    throw new HttpError(
+      400,
+      "DESTINATION_COVER_INVALID",
+      "Choose a public image from the media library.",
+    );
+  }
+}
 
 for (const resource of ["destinations", "categories"] as const) {
   const model =
@@ -653,18 +677,30 @@ for (const resource of ["destinations", "categories"] as const) {
     const records = await (
       model.findMany as typeof prisma.destination.findMany
     )({ orderBy: [{ sortOrder: "asc" }, { name: "asc" }] });
-    response.json({ data: records });
+    response.json({
+      data: records.map((record) =>
+        resource === "destinations"
+          ? { ...record, description: record.summary }
+          : record,
+      ),
+    });
   });
   adminCatalogueRouter.post(
     `/${resource}`,
     requireCsrf,
     async (request, response) => {
       const input = taxonomySchema.parse(request.body);
+      if (resource === "destinations") {
+        await verifyDestinationCoverMedia(input.coverMediaId);
+      }
       const data = {
         slug: input.slug,
         name: input.name,
         ...(resource === "destinations"
-          ? { summary: input.description ?? null }
+          ? {
+              summary: input.description ?? null,
+              coverMediaId: input.coverMediaId ?? null,
+            }
           : { description: input.description ?? null }),
         status: input.status,
         publishedAt:
@@ -679,7 +715,12 @@ for (const resource of ["destinations", "categories"] as const) {
       const record = await (model.create as typeof prisma.destination.create)({
         data,
       } as never);
-      response.status(201).json({ data: record });
+      response.status(201).json({
+        data:
+          resource === "destinations"
+            ? { ...record, description: record.summary }
+            : record,
+      });
     },
   );
   adminCatalogueRouter.put(
@@ -688,11 +729,17 @@ for (const resource of ["destinations", "categories"] as const) {
     async (request, response) => {
       const id = z.string().max(30).parse(request.params.id);
       const input = taxonomySchema.parse(request.body);
+      if (resource === "destinations") {
+        await verifyDestinationCoverMedia(input.coverMediaId);
+      }
       const data = {
         slug: input.slug,
         name: input.name,
         ...(resource === "destinations"
-          ? { summary: input.description ?? null }
+          ? {
+              summary: input.description ?? null,
+              coverMediaId: input.coverMediaId ?? null,
+            }
           : { description: input.description ?? null }),
         status: input.status,
         publishedAt:
@@ -708,7 +755,12 @@ for (const resource of ["destinations", "categories"] as const) {
         where: { id },
         data,
       } as never);
-      response.json({ data: record });
+      response.json({
+        data:
+          resource === "destinations"
+            ? { ...record, description: record.summary }
+            : record,
+      });
     },
   );
   adminCatalogueRouter.delete(

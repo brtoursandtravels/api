@@ -128,6 +128,7 @@ publicContentRouter.get("/pages/:slug", publicReadCache, async (request, respons
 publicContentRouter.get("/destinations", publicReadCache, async (_request, response) => {
   const records = await prisma.destination.findMany({
     where: published(new Date()),
+    include: { coverMedia: true },
     orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
   });
   response.json({
@@ -136,6 +137,10 @@ publicContentRouter.get("/destinations", publicReadCache, async (_request, respo
       slug: record.slug,
       name: record.name,
       summary: record.summary,
+      cover:
+        record.coverMedia?.visibility === "PUBLIC"
+          ? mediaDto(record.coverMedia)
+          : null,
       isDemo: record.isDemo,
     })),
   });

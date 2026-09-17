@@ -141,6 +141,7 @@ model Destination {
   slug        String               @unique @db.VarChar(180)
   name        String               @db.VarChar(160)
   summary     String?              @db.Text
+  coverMediaId String?              @db.VarChar(30)
   status      PublicationStatus    @default(DRAFT)
   publishedAt DateTime?            @db.DateTime(3)
   isDemo      Boolean              @default(false)
@@ -149,9 +150,11 @@ model Destination {
   updatedAt   DateTime             @updatedAt @db.DateTime(3)
   packages    PackageDestination[]
   albums      GalleryAlbum[]
+  coverMedia  MediaAsset?          @relation("DestinationCover", fields: [coverMediaId], references: [id], onDelete: SetNull)
 
   @@index([status, publishedAt, isDemo])
   @@index([sortOrder])
+  @@index([coverMediaId])
 }
 
 model Category {
@@ -290,6 +293,7 @@ model MediaAsset {
   uploadedBy       AdminUser?          @relation("MediaUploadedBy", fields: [uploadedById], references: [id], onDelete: SetNull)
   packageMedia     PackageMedia[]
   albumImages      GalleryAlbumImage[]
+  destinationCovers Destination[]          @relation("DestinationCover")
   blogCovers       BlogPost[]          @relation("BlogCover")
   packageBrochures Package[]           @relation("PackageBrochure")
 

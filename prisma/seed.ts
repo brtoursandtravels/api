@@ -8,6 +8,7 @@ import {
   tourDestinations,
   tourNavigation,
   tourPackages,
+  tourPackageMedia,
 } from "./catalogue-data.js";
 
 config({ path: ".env" });
@@ -117,6 +118,16 @@ async function seedTourMedia() {
       width: 1600,
       height: 900,
     },
+    ...Object.entries(tourPackageMedia).flatMap(([packageSlug, media]) =>
+      media.map((asset, index) => ({
+        key: `package:${packageSlug}:${index}`,
+        image: asset.image,
+        altText: asset.altText,
+        caption: asset.caption,
+        width: 1536,
+        height: 960,
+      })),
+    ),
   ];
 
   for (const asset of assets) {
@@ -188,6 +199,7 @@ async function seedReferenceContent(mediaByDestination: Map<string, string>) {
       update: {
         name: destination.name,
         summary: destination.summary,
+        coverMediaId: mediaByDestination.get(destination.slug),
         sortOrder: destination.sortOrder,
         status: "PUBLISHED",
         publishedAt,
@@ -197,6 +209,7 @@ async function seedReferenceContent(mediaByDestination: Map<string, string>) {
         slug: destination.slug,
         name: destination.name,
         summary: destination.summary,
+        coverMediaId: mediaByDestination.get(destination.slug),
         sortOrder: destination.sortOrder,
         status: "PUBLISHED",
         publishedAt,
@@ -223,7 +236,38 @@ async function seedReferenceContent(mediaByDestination: Map<string, string>) {
   const categoryBySlug = new Map(categoryRows.map((row) => [row.slug, row.id]));
 
   for (const [index, seed] of tourPackages.entries()) {
-    const days = seed.itinerary.length;
+    const days =
+      "durationDays" in seed ? seed.durationDays : seed.itinerary.length;
+    const inclusions =
+      "inclusions" in seed
+        ? [...seed.inclusions]
+        : [
+            "Accommodation and transport described in the confirmed quote",
+            "Route planning and trip coordination",
+            "Applicable sightseeing listed in the confirmed itinerary",
+            "Pre-departure support",
+          ];
+    const exclusions =
+      "exclusions" in seed
+        ? [...seed.exclusions]
+        : [
+            "Air or rail tickets unless specifically quoted",
+            "Personal expenses and optional activities",
+            "Meals or services not listed in the confirmed quote",
+            "Weather-related or authority-mandated changes",
+          ];
+    const transportInformation =
+      "transportInformation" in seed
+        ? seed.transportInformation
+        : "Vehicle type and pickup plan depend on final group size, route access and the confirmed quotation.";
+    const accommodationNotes =
+      "accommodationNotes" in seed
+        ? seed.accommodationNotes
+        : "Stay category and room configuration are selected during enquiry and confirmed by property name before payment.";
+    const importantInformation =
+      "importantInformation" in seed
+        ? seed.importantInformation
+        : "The displayed price is an indicative starting point, not live availability. Mountain, pilgrimage and weather-sensitive routes may change for safety or local authority requirements.";
     const item = await prisma.package.upsert({
       where: { slug: seed.slug },
       update: {
@@ -237,24 +281,11 @@ async function seedReferenceContent(mediaByDestination: Map<string, string>) {
         currency: "INR",
         priceBasis: "PER_PERSON",
         highlights: [...seed.highlights],
-        inclusions: [
-          "Accommodation and transport described in the confirmed quote",
-          "Route planning and trip coordination",
-          "Applicable sightseeing listed in the confirmed itinerary",
-          "Pre-departure support",
-        ],
-        exclusions: [
-          "Air or rail tickets unless specifically quoted",
-          "Personal expenses and optional activities",
-          "Meals or services not listed in the confirmed quote",
-          "Weather-related or authority-mandated changes",
-        ],
-        transportInformation:
-          "Vehicle type and pickup plan depend on final group size, route access and the confirmed quotation.",
-        accommodationNotes:
-          "Stay category and room configuration are selected during enquiry and confirmed by property name before payment.",
-        importantInformation:
-          "The displayed price is an indicative starting point, not live availability. Mountain, pilgrimage and weather-sensitive routes may change for safety or local authority requirements.",
+        inclusions,
+        exclusions,
+        transportInformation,
+        accommodationNotes,
+        importantInformation,
         cancellationRules:
           "Cancellation terms depend on the confirmed suppliers and travel dates and are provided in writing with the final quotation.",
         seoTitle: `${seed.title} | BR Tours and Travels`,
@@ -277,24 +308,11 @@ async function seedReferenceContent(mediaByDestination: Map<string, string>) {
         currency: "INR",
         priceBasis: "PER_PERSON",
         highlights: [...seed.highlights],
-        inclusions: [
-          "Accommodation and transport described in the confirmed quote",
-          "Route planning and trip coordination",
-          "Applicable sightseeing listed in the confirmed itinerary",
-          "Pre-departure support",
-        ],
-        exclusions: [
-          "Air or rail tickets unless specifically quoted",
-          "Personal expenses and optional activities",
-          "Meals or services not listed in the confirmed quote",
-          "Weather-related or authority-mandated changes",
-        ],
-        transportInformation:
-          "Vehicle type and pickup plan depend on final group size, route access and the confirmed quotation.",
-        accommodationNotes:
-          "Stay category and room configuration are selected during enquiry and confirmed by property name before payment.",
-        importantInformation:
-          "The displayed price is an indicative starting point, not live availability. Mountain, pilgrimage and weather-sensitive routes may change for safety or local authority requirements.",
+        inclusions,
+        exclusions,
+        transportInformation,
+        accommodationNotes,
+        importantInformation,
         cancellationRules:
           "Cancellation terms depend on the confirmed suppliers and travel dates and are provided in writing with the final quotation.",
         seoTitle: `${seed.title} | BR Tours and Travels`,
@@ -329,17 +347,32 @@ async function seedReferenceContent(mediaByDestination: Map<string, string>) {
         dayNumber: dayIndex + 1,
         title,
         description,
+        activities: [],
       })),
     });
     await prisma.departure.deleteMany({ where: { packageId: item.id } });
     await prisma.packageMedia.deleteMany({ where: { packageId: item.id } });
-    await prisma.packageMedia.create({
-      data: {
-        packageId: item.id,
-        mediaAssetId: mediaByDestination.get(seed.destinationSlug)!,
-        sortOrder: 0,
-        isCover: true,
-      },
+    const packageSpecificMedia = Object.entries(tourPackageMedia).find(
+      ([packageSlug]) => packageSlug === seed.slug,
+    )?.[1];
+    const packageMediaIds = packageSpecificMedia
+      ? packageSpecificMedia.map((_, mediaIndex) =>
+          mediaByDestination.get(`package:${seed.slug}:${mediaIndex}`),
+        )
+      : [mediaByDestination.get(seed.destinationSlug)];
+    await prisma.packageMedia.createMany({
+      data: packageMediaIds.flatMap((mediaAssetId, mediaIndex) =>
+        mediaAssetId
+          ? [
+              {
+                packageId: item.id,
+                mediaAssetId,
+                sortOrder: mediaIndex,
+                isCover: mediaIndex === 0,
+              },
+            ]
+          : [],
+      ),
     });
   }
 }
@@ -631,7 +664,7 @@ async function seedPublicExperience() {
     ["DISCOVERY", "Where would you like to begin?", { description: "Search the complete collection by destination, trip style or starting city." }],
     ["FEATURED_PACKAGES", "Main tours to inspire your next journey", { eyebrow: "BR favourites", limit: 6 }],
     ["CATEGORIES", "Choose a travel style", { eyebrow: "A pace that suits you" }],
-    ["DESTINATIONS", "Five distinctive ways to see India", { eyebrow: "Featured destinations", photographyPending: false }],
+    ["DESTINATIONS", "Six distinctive ways to begin your journey", { eyebrow: "Featured destinations", photographyPending: false }],
     ["INTRODUCTION", "Travel planning with clarity at the centre.", { description: "Compare real route ideas, then discuss dates, stays, transport and priorities before anything is confirmed." }],
     [
       "PLANNING_PROCESS",

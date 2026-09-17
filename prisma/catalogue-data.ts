@@ -44,6 +44,24 @@ export const tourDestinations = [
     summary:
       "Golden sandstone streets, living-fort heritage and unhurried evenings among the dunes of the Thar Desert.",
   },
+  {
+    slug: "north-india-nepal",
+    name: "North India & Nepal",
+    sortOrder: 6,
+    image: "north-india-nepal-ayodhya.webp",
+    altText: "Grand pale-stone temple in Ayodhya illuminated by sunrise",
+    summary:
+      "A broad pilgrimage circuit linking Ayodhya, Mathura, Vrindavan, Kashi, Prayagraj and Kathmandu with selected Rajasthan and Gujarat stops.",
+  },
+  {
+    slug: "maharashtra",
+    name: "Maharashtra",
+    sortOrder: 7,
+    image: "maharashtra-saputara-gira-falls.webp",
+    altText: "Broad monsoon waterfall surrounded by the green hills near Saputara",
+    summary:
+      "Jyotirlinga temples, sacred towns, rock-cut heritage and a green Saputara beginning across Gujarat and Maharashtra.",
+  },
 ] as const;
 
 export const tourNavigation = [
@@ -108,6 +126,181 @@ export const tourPackages = [
       ["Badrinath and Mana", "Visit the temple and nearby Mana when road and weather conditions allow."],
       ["Badrinath to Rudraprayag", "Descend to Rudraprayag for a relaxed final mountain night."],
       ["Return to Haridwar", "Travel back to Haridwar for departure."],
+    ],
+  },
+  {
+    slug: "amarnath-vaishno-devi-yatra",
+    title: "Amarnath & Vaishno Devi Yatra",
+    destinationSlug: "kashmir",
+    categorySlug: "pilgrimage",
+    startingCity: "Rajkot",
+    startingPrice: "16000.00",
+    durationDays: 13,
+    summary:
+      "A 13-day pilgrimage from Rajkot covering Amarnath, Vaishno Devi, Srinagar, Pahalgam, Amritsar and selected Rajasthan stops.",
+    overview:
+      "Travel from Rajkot on a broad pilgrimage circuit featuring Juna Ranuja, Karni Mata Temple, Amritsar's Golden Temple and Wagah Border, Vaishno Devi Temple, Pahalgam, Amarnath Yatra, Srinagar, Jaipur, Pushkar and a return route via Shrinathji. The reference fare starts at ₹16,000 per person for non-AC travel, with an AC option shown at ₹19,500 per person. Exact July departure dates, route order, stays, permits, inclusions and transport details are confirmed before booking.",
+    highlights: [
+      "Amarnath Yatra and Vaishno Devi Temple",
+      "Srinagar and Pahalgam",
+      "Golden Temple and Wagah Border",
+      "Jaipur, Pushkar and Karni Mata Temple",
+      "Juna Ranuja and return via Shrinathji",
+      "AC option from ₹19,500 per person",
+    ],
+    itinerary: [],
+  },
+  {
+    slug: "khatu-shyam-salasar-sanwariya-yatra",
+    title: "Khatu Shyam, Salasar Balaji & Sanwariya Seth Yatra",
+    destinationSlug: "rajasthan",
+    categorySlug: "pilgrimage",
+    startingCity: "Ahmedabad",
+    startingPrice: "4999.00",
+    durationDays: 2,
+    summary:
+      "A compact AC sleeper pilgrimage from Ahmedabad covering Khatu Shyam, Salasar Balaji and Shri Sanwariya Seth.",
+    overview:
+      "Travel from Ahmedabad by 2x2 AC sleeper coach for darshan at Khatu Shyam Ji, Salasar Balaji and Shri Sanwariya Seth. The package includes the meals and AC hotel stay listed below. The departure date, pickup point, darshan timings and live availability are confirmed before booking.",
+    highlights: [
+      "Khatu Shyam Ji darshan",
+      "Salasar Balaji temple visit",
+      "Shri Sanwariya Seth temple visit",
+      "2x2 AC sleeper coach travel",
+      "Meals and AC hotel stay",
+    ],
+    inclusions: [
+      "2x2 AC sleeper coach travel from Ahmedabad",
+      "Morning tea and breakfast",
+      "Lunch",
+      "Light evening meal",
+      "AC hotel accommodation",
+    ],
+    exclusions: [
+      "Personal expenses and optional purchases",
+      "Temple donations, VIP darshan or special-entry charges",
+      "Meals and services not listed under inclusions",
+    ],
+    transportInformation:
+      "Travel is planned by 2x2 AC sleeper coach from Ahmedabad. The final pickup point and departure time are confirmed before travel.",
+    accommodationNotes:
+      "AC hotel accommodation is included. The hotel name and room-sharing arrangement are confirmed with the final booking.",
+    importantInformation:
+      "Departure date, darshan timings and route order are subject to availability, traffic, temple arrangements and local conditions.",
+    itinerary: [
+      [
+        "Ahmedabad to Khatu Shyam",
+        "Depart Ahmedabad in the evening by AC sleeper coach for the overnight journey to Khatu Shyam Ji.",
+      ],
+      [
+        "Khatu Shyam, Salasar Balaji and Sanwariya Seth",
+        "Complete the planned temple visits with the listed meals, then begin the return journey to Ahmedabad after dinner.",
+      ],
+    ],
+  },
+  {
+    slug: "ayodhya-kashi-nepal-yatra",
+    title: "Ayodhya, Kashi & Nepal Grand Yatra",
+    destinationSlug: "north-india-nepal",
+    categorySlug: "pilgrimage",
+    startingCity: "Ahmedabad",
+    startingPrice: "23000.00",
+    durationDays: 13,
+    summary:
+      "A 13-day pilgrimage from Ahmedabad through Jaipur, Braj, Ayodhya, Kathmandu, Kashi, Prayagraj, Pushkar, Udaipur and Gujarat temple stops.",
+    overview:
+      "Travel by 2x2 AC sleeper coach on an extensive pilgrimage covering Jaipur, Gokul, Raman Reti, Vrindavan, Mathura, Ayodhya, Chhapaiya, Gorakhpur, Kathmandu, Pashupatinath, Varanasi, Kashi Vishwanath, Prayagraj, Pushkar, Shrinathji, Udaipur, Shamlaji and Dakor. The upper sleeper fare starts at ₹23,000 per person, while the lower sleeper fare is ₹25,000 per person. Departure dates, border requirements, pickup details and live availability are confirmed before booking.",
+    highlights: [
+      "Ayodhya, Chhapaiya and the Braj pilgrimage circuit",
+      "Kathmandu and Pashupatinath Temple",
+      "Varanasi ghats and Kashi Vishwanath darshan",
+      "Prayagraj, Pushkar, Shrinathji and Udaipur",
+      "Upper sleeper from ₹23,000; lower sleeper ₹25,000",
+      "2x2 AC sleeper luxury coach",
+    ],
+    inclusions: [
+      "2x2 AC sleeper luxury coach travel from Ahmedabad",
+      "Morning tea and breakfast",
+      "Lunch",
+      "Light evening meal",
+      "AC hotel accommodation",
+    ],
+    exclusions: [
+      "Personal expenses and optional purchases",
+      "Temple donations, VIP darshan or special-entry charges",
+      "Nepal border documentation or charges unless specifically confirmed",
+      "Meals and services not listed under inclusions",
+    ],
+    transportInformation:
+      "The route is planned by 2x2 AC sleeper luxury coach from Ahmedabad. The final pickup point, departure time and Nepal border arrangements are confirmed before travel.",
+    accommodationNotes:
+      "AC hotel accommodation is included at planned overnight stops. Hotel names, room sharing and any overnight coach journeys are confirmed with the final itinerary.",
+    importantInformation:
+      "Travellers must carry the identification and documents required for the Nepal border. Route order, darshan timings and overnight stops may change with traffic, border procedures, temple arrangements and local conditions.",
+    itinerary: [
+      ["Ahmedabad to Jaipur", "Depart Ahmedabad by AC sleeper coach for the overnight journey to Jaipur."],
+      ["Jaipur", "Explore the planned Jaipur sights and stay overnight in Jaipur."],
+      ["Jaipur to Gokul", "Continue toward Gokul and Raman Reti, followed by the planned overnight stay."],
+      ["Vrindavan and Mathura", "Visit Vrindavan and Mathura, then depart toward Ayodhya for an overnight coach journey."],
+      ["Ayodhya and Chhapaiya", "Complete the planned Ayodhya and Chhapaiya visits and stay overnight in Ayodhya."],
+      ["Ayodhya to Gorakhpur", "Travel through Gorakhpur and continue toward Nepal on the overnight journey."],
+      ["Kathmandu and Pashupatinath", "Explore Kathmandu and visit Pashupatinath Temple, followed by an overnight stay."],
+      ["Kathmandu to Sonauli", "Travel from Kathmandu toward the Sonauli border and continue overnight."],
+      ["Varanasi and Kashi", "Visit the Varanasi ghats and Kashi Vishwanath Temple, followed by an overnight stay."],
+      ["Prayagraj", "Continue from Varanasi to Prayagraj for the planned pilgrimage visit, then travel overnight."],
+      ["Pushkar", "Visit Pushkar and complete the planned sightseeing before the onward overnight journey."],
+      ["Shrinathji and Udaipur", "Visit Shrinathji and continue to Udaipur for the planned overnight stay."],
+      ["Shamlaji, Dakor and Ahmedabad", "Visit Shamlaji and Dakor before completing the return journey to Ahmedabad."],
+    ],
+  },
+  {
+    slug: "maharashtra-jyotirlinga-saputara-yatra",
+    title: "Maharashtra Jyotirlinga & Saputara Yatra",
+    destinationSlug: "maharashtra",
+    categorySlug: "pilgrimage",
+    startingCity: "Ahmedabad",
+    startingPrice: "13999.00",
+    durationDays: 8,
+    summary:
+      "An eight-day AC sleeper pilgrimage from Ahmedabad through Saputara, Nashik, Shirdi, Maharashtra's Jyotirlingas and celebrated heritage sites.",
+    overview:
+      "Travel from Ahmedabad through Unai hot springs, Saputara, Nashik, Panchavati and the Godavari before visiting Trimbakeshwar, Shirdi, Shani Shingnapur, Aurangabad, Bibi Ka Maqbara, Daulatabad Fort, Ellora Caves, Grishneshwar, Aundha Nagnath, Ambajogai, Parli Vaijnath, Tulja Bhavani, Pandharpur and Bhimashankar. The listed fare is ₹13,999 per person. Departure dates, pickup details, route order and live availability are confirmed before booking.",
+    highlights: [
+      "Trimbakeshwar, Grishneshwar, Aundha Nagnath, Parli Vaijnath and Bhimashankar",
+      "Shirdi Sai Baba and Shani Shingnapur",
+      "Saputara, Unai, Nashik, Panchavati and the Godavari",
+      "Bibi Ka Maqbara, Daulatabad Fort and Ellora Caves",
+      "Tulja Bhavani and Pandharpur Vitthal Temple",
+      "2x2 AC sleeper luxury coach",
+    ],
+    inclusions: [
+      "2x2 AC sleeper luxury coach travel from Ahmedabad",
+      "Morning tea and breakfast",
+      "Lunch",
+      "Light evening meal",
+      "AC hotel accommodation",
+    ],
+    exclusions: [
+      "Personal expenses and optional purchases",
+      "Temple donations, VIP darshan or special-entry charges",
+      "Local transport, guides or attraction tickets unless specifically confirmed",
+      "Meals and services not listed under inclusions",
+    ],
+    transportInformation:
+      "Travel is planned by 2x2 AC sleeper luxury coach from Ahmedabad. The final pickup point, departure time and daily route are confirmed before travel.",
+    accommodationNotes:
+      "AC hotel accommodation is included at planned overnight stops. Hotel names, room sharing and overnight coach journeys are confirmed with the final itinerary.",
+    importantInformation:
+      "The displayed route follows the supplied sightseeing list. Daily order, darshan timings and overnight stops may change with traffic, temple arrangements, monsoon conditions and local access.",
+    itinerary: [
+      ["Ahmedabad, Unai and Saputara", "Depart Ahmedabad and travel through Unai hot springs to the green hill landscapes around Saputara."],
+      ["Nashik and Panchavati", "Continue to Nashik for Panchavati and the Godavari river pilgrimage sites."],
+      ["Trimbakeshwar, Shirdi and Shani Shingnapur", "Visit Trimbakeshwar Jyotirlinga, Shirdi Sai Baba Temple and Shani Shingnapur."],
+      ["Aurangabad, Daulatabad and Ellora", "Explore Bibi Ka Maqbara, Daulatabad Fort and the rock-cut heritage of the Ellora Caves."],
+      ["Grishneshwar and Aundha Nagnath", "Complete darshan at Grishneshwar Jyotirlinga and Aundha Nagnath Jyotirlinga."],
+      ["Ambajogai and Parli Vaijnath", "Visit Ambajogai Temple and Parli Vaijnath Jyotirlinga."],
+      ["Tulja Bhavani and Pandharpur", "Continue to Tulja Bhavani Temple and Pandharpur's Vitthal Temple."],
+      ["Bhimashankar and Ahmedabad", "Visit Bhimashankar Jyotirlinga and begin the return journey to Ahmedabad."],
     ],
   },
   {
@@ -273,6 +466,96 @@ export const tourPackages = [
     ],
   },
 ] as const;
+
+export const tourPackageMedia = {
+  "amarnath-vaishno-devi-yatra": [
+    {
+      image: "amarnath-vaishno-devi-vaishno-devi-bhawan.webp",
+      altText:
+        "Vaishno Devi Bhawan illuminated at blue hour in the Trikuta hills",
+      caption: "Vaishno Devi Bhawan in the Trikuta hills",
+    },
+    {
+      image: "amarnath-vaishno-devi-amarnath-cave.webp",
+      altText:
+        "Amarnath cave pilgrimage route surrounded by snowy Himalayan peaks",
+      caption: "The mountain setting of the Amarnath pilgrimage",
+    },
+    {
+      image: "amarnath-vaishno-devi-amritsar-wagah.webp",
+      altText:
+        "Golden Temple in Amritsar and the ceremonial Wagah border setting",
+      caption: "Amritsar's Golden Temple and the Wagah border",
+    },
+    {
+      image: "amarnath-vaishno-devi-pahalgam.webp",
+      altText:
+        "Lidder River flowing through green Pahalgam valley below Himalayan peaks",
+      caption: "Pahalgam's river and mountain landscape",
+    },
+  ],
+  "khatu-shyam-salasar-sanwariya-yatra": [
+    {
+      image: "khatu-salasar-sanwariya-khatu-shyam.webp",
+      altText: "Khatu Shyam Ji temple approach in warm morning light",
+      caption: "Khatu Shyam Ji pilgrimage setting",
+    },
+    {
+      image: "khatu-salasar-sanwariya-salasar-balaji.webp",
+      altText: "Salasar Balaji temple courtyard in Rajasthan",
+      caption: "Salasar Balaji temple setting",
+    },
+    {
+      image: "khatu-salasar-sanwariya-sanwariya-seth.webp",
+      altText: "Shri Sanwariya Seth temple with pale stone domes",
+      caption: "Shri Sanwariya Seth temple setting",
+    },
+  ],
+  "ayodhya-kashi-nepal-yatra": [
+    {
+      image: "north-india-nepal-ayodhya.webp",
+      altText: "Grand pale-stone temple in Ayodhya illuminated by sunrise",
+      caption: "Ayodhya pilgrimage setting at sunrise",
+    },
+    {
+      image: "ayodhya-kashi-nepal-pashupatinath.webp",
+      altText: "Traditional Pashupatinath temple complex beside the Bagmati River in Kathmandu",
+      caption: "Pashupatinath temple setting in Kathmandu",
+    },
+    {
+      image: "ayodhya-kashi-nepal-varanasi-ghats.webp",
+      altText: "Historic Varanasi ghats and wooden boats along the Ganges at sunrise",
+      caption: "Varanasi ghats at sunrise",
+    },
+    {
+      image: "ayodhya-kashi-nepal-vrindavan.webp",
+      altText: "Ornate cream-stone temple courtyard inspired by Vrindavan and Mathura",
+      caption: "Vrindavan and Mathura pilgrimage setting",
+    },
+  ],
+  "maharashtra-jyotirlinga-saputara-yatra": [
+    {
+      image: "maharashtra-trimbakeshwar.webp",
+      altText: "Dark-stone Trimbakeshwar temple beneath the Western Ghats",
+      caption: "Trimbakeshwar Jyotirlinga temple setting",
+    },
+    {
+      image: "maharashtra-saputara-gira-falls.webp",
+      altText: "Broad monsoon waterfall surrounded by the green hills near Saputara",
+      caption: "Monsoon landscape near Saputara",
+    },
+    {
+      image: "maharashtra-bibi-ka-maqbara.webp",
+      altText: "Bibi Ka Maqbara and its formal garden axis in Aurangabad",
+      caption: "Bibi Ka Maqbara in Aurangabad",
+    },
+    {
+      image: "maharashtra-ellora-kailasa.webp",
+      altText: "Rock-cut Kailasa temple architecture at the Ellora Caves",
+      caption: "The monumental rock-cut heritage of Ellora",
+    },
+  ],
+} as const;
 
 export const tourArticles = [
   {
