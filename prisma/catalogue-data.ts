@@ -62,6 +62,15 @@ export const tourDestinations = [
     summary:
       "Jyotirlinga temples, sacred towns, rock-cut heritage and a green Saputara beginning across Gujarat and Maharashtra.",
   },
+  {
+    slug: "madhya-pradesh",
+    name: "Madhya Pradesh",
+    sortOrder: 8,
+    image: "madhya-pradesh-omkareshwar.webp",
+    altText: "Omkareshwar temple town and suspension bridge beside the Narmada River",
+    summary:
+      "Sacred Ujjain and Omkareshwar journeys paired with Indore heritage, river ghats and central India's historic temple landscapes.",
+  },
 ] as const;
 
 export const tourNavigation = [
@@ -301,6 +310,113 @@ export const tourPackages = [
       ["Ambajogai and Parli Vaijnath", "Visit Ambajogai Temple and Parli Vaijnath Jyotirlinga."],
       ["Tulja Bhavani and Pandharpur", "Continue to Tulja Bhavani Temple and Pandharpur's Vitthal Temple."],
       ["Bhimashankar and Ahmedabad", "Visit Bhimashankar Jyotirlinga and begin the return journey to Ahmedabad."],
+    ],
+  },
+  {
+    slug: "ujjain-indore-omkareshwar-yatra",
+    title: "Ujjain, Indore & Omkareshwar Yatra",
+    destinationSlug: "madhya-pradesh",
+    categorySlug: "pilgrimage",
+    startingCity: "Ahmedabad",
+    startingPrice: "5999.00",
+    durationDays: 3,
+    summary:
+      "A three-day AC coach pilgrimage from Ahmedabad covering Ujjain, Indore, Omkareshwar and Mamleshwar.",
+    overview:
+      "Travel from Ahmedabad for Mahakaleshwar darshan and Ujjain's important temples, continue to Indore for Rajwada and shopping, then visit Omkareshwar, Mamleshwar, the Narmada–Kaveri Sangam and the Navgraha Shani Temple. The listed fare is ₹5,999 per person. Departure dates, pickup details, darshan timings and live availability are confirmed before booking.",
+    highlights: [
+      "Mahakaleshwar, Kal Bhairav and Harsiddhi temples",
+      "Meldi Mata and Bade Ganesh temples",
+      "Indore Rajwada and shopping time",
+      "Omkareshwar and Mamleshwar temples",
+      "Narmada–Kaveri Sangam and Navgraha Shani Temple",
+      "2x2 AC coach travel",
+    ],
+    inclusions: [
+      "2x2 AC coach travel from Ahmedabad",
+      "Morning tea and breakfast",
+      "Lunch",
+      "Light evening meal",
+      "AC hotel accommodation",
+    ],
+    exclusions: [
+      "Personal expenses and optional purchases",
+      "Temple donations, VIP darshan or special-entry charges",
+      "Local transport, guides or attraction tickets unless specifically confirmed",
+      "Meals and services not listed under inclusions",
+    ],
+    transportInformation:
+      "Travel is planned by 2x2 AC coach from Ahmedabad. The final pickup point, departure time and daily route are confirmed before travel.",
+    accommodationNotes:
+      "AC hotel accommodation is included. The hotel name and room-sharing arrangement are confirmed with the final booking.",
+    importantInformation:
+      "This package is presented as three days and two nights based on the three itinerary days shown in the supplied poster. Darshan timings and route order may change with traffic, temple arrangements and local conditions.",
+    itinerary: [
+      [
+        "Ujjain and Mahakaleshwar",
+        "Visit Mahakaleshwar Temple, Kal Bhairav Temple, Meldi Mata Temple, Harsiddhi Temple and Bade Ganesh Temple.",
+      ],
+      [
+        "Indore",
+        "Explore Indore's Rajwada heritage area and enjoy the planned shopping time.",
+      ],
+      [
+        "Omkareshwar and Mamleshwar",
+        "Visit Omkareshwar Temple, Mamleshwar Temple, the Narmada–Kaveri Sangam and the Navgraha Shani Temple before the return journey.",
+      ],
+    ],
+  },
+  {
+    slug: "lonavala-khandala-matheran-mahabaleshwar",
+    title: "Lonavala, Khandala, Matheran & Mahabaleshwar Escape",
+    destinationSlug: "maharashtra",
+    categorySlug: "weekend",
+    startingCity: "Ahmedabad",
+    startingPrice: "7499.00",
+    durationDays: 3,
+    summary:
+      "A three-day AC sleeper hill-station escape from Ahmedabad through Lonavala, Khandala, Matheran and Mahabaleshwar.",
+    overview:
+      "Discover the misty Western Ghats across Lonavala, Khandala, Matheran and Mahabaleshwar on a compact three-day journey. The listed fare is INR 7,499 per person. Departure dates, pickup details, sightseeing order and live availability are confirmed before booking.",
+    highlights: [
+      "Monsoon landscapes of Lonavala and Khandala",
+      "Matheran's forest trails and valley viewpoints",
+      "Mahabaleshwar's highland scenery",
+      "Three-day Western Ghats circuit from Ahmedabad",
+      "2x2 AC sleeper luxury coach",
+    ],
+    inclusions: [
+      "2x2 AC sleeper luxury coach travel from Ahmedabad",
+      "Morning tea and breakfast",
+      "Lunch",
+      "Light evening meal",
+      "AC hotel accommodation",
+    ],
+    exclusions: [
+      "Personal expenses and optional purchases",
+      "Attraction tickets or local transport unless specifically confirmed",
+      "Activities and services not listed under inclusions",
+      "Meals not listed under inclusions",
+    ],
+    transportInformation:
+      "Travel is planned by 2x2 AC sleeper luxury coach from Ahmedabad. The final pickup point, departure time and route are confirmed before travel.",
+    accommodationNotes:
+      "AC hotel accommodation is included. The hotel name, overnight location and room-sharing arrangement are confirmed with the final booking.",
+    importantInformation:
+      "Hill-station sightseeing and route order may change with monsoon weather, road conditions and local access. Departure dates, pickup details and live availability are confirmed before booking.",
+    itinerary: [
+      [
+        "Lonavala and Khandala",
+        "Travel from Ahmedabad and explore selected green valleys, waterfalls and scenic viewpoints around Lonavala and Khandala, subject to local conditions.",
+      ],
+      [
+        "Matheran",
+        "Enjoy Matheran's vehicle-free forest trails, red-earth paths and selected valley viewpoints.",
+      ],
+      [
+        "Mahabaleshwar and return",
+        "Discover selected Mahabaleshwar viewpoints and highland scenery before beginning the return journey to Ahmedabad.",
+      ],
     ],
   },
   {
@@ -553,6 +669,50 @@ export const tourPackageMedia = {
       image: "maharashtra-ellora-kailasa.webp",
       altText: "Rock-cut Kailasa temple architecture at the Ellora Caves",
       caption: "The monumental rock-cut heritage of Ellora",
+    },
+  ],
+  "ujjain-indore-omkareshwar-yatra": [
+    {
+      image: "madhya-pradesh-mahakaleshwar.webp",
+      altText: "Illuminated Mahakaleshwar temple complex in Ujjain at blue hour",
+      caption: "Mahakaleshwar temple setting in Ujjain",
+    },
+    {
+      image: "madhya-pradesh-rajwada-indore.webp",
+      altText: "Historic Rajwada Palace facade and forecourt in Indore",
+      caption: "Rajwada Palace in Indore",
+    },
+    {
+      image: "madhya-pradesh-omkareshwar.webp",
+      altText: "Omkareshwar temple town and suspension bridge beside the Narmada River",
+      caption: "Omkareshwar on the Narmada River",
+    },
+    {
+      image: "madhya-pradesh-mamleshwar.webp",
+      altText: "Ancient stone Mamleshwar Temple near Omkareshwar",
+      caption: "Mamleshwar Temple near Omkareshwar",
+    },
+  ],
+  "lonavala-khandala-matheran-mahabaleshwar": [
+    {
+      image: "maharashtra-hills-lonavala.webp",
+      altText: "Misty green Sahyadri valley and seasonal waterfall near Lonavala",
+      caption: "Lonavala's monsoon landscape",
+    },
+    {
+      image: "maharashtra-hills-khandala.webp",
+      altText: "Cloud-wrapped green ridges and winding mountain road near Khandala",
+      caption: "Khandala's rain-washed valley",
+    },
+    {
+      image: "maharashtra-hills-matheran.webp",
+      altText: "Red-earth walking trail winding through Matheran's misty green forest",
+      caption: "Matheran's forest trails",
+    },
+    {
+      image: "maharashtra-hills-mahabaleshwar.webp",
+      altText: "Green tableland cliffs and deep forested valley near Mahabaleshwar",
+      caption: "Mahabaleshwar's Western Ghats scenery",
     },
   ],
 } as const;
