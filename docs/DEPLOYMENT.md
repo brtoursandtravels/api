@@ -66,9 +66,12 @@ run `prisma migrate reset` or the demo seed in production. Create the first
 administrator interactively only on a trusted terminal.
 
 `npm start` automatically runs `db:prepare:deploy` first. This regenerates the
-Prisma client, applies pending migrations, and runs the idempotent demo seed
-only when `NODE_ENV` is not `production` and `ALLOW_DEMO_SEED=true`. Production
-starts therefore skip the broad demo seed. The
+Prisma client, applies pending migrations, and runs the production-safe
+catalogue seed. The catalogue seed creates missing destinations, categories,
+packages and project-owned media without replacing packages that already exist
+and may have been edited in the admin panel. The broader idempotent demo seed
+runs only when `NODE_ENV` is not `production` and `ALLOW_DEMO_SEED=true`.
+Production starts therefore skip demo enquiries and other broad sample data. The
 `20260914143000_published_sample_testimonials` migration installs three
 explicitly labelled sample review cards; replace them with consented customer
 reviews and archive the samples before launch sign-off.
