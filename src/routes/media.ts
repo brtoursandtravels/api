@@ -277,6 +277,17 @@ adminMediaRouter.get("/:id/file", async (request, response) => {
     );
   response.setHeader("cache-control", "private, no-store");
   response.setHeader("x-content-type-options", "nosniff");
+  // Seed files are deployed as static assets on Vercel, not stored in the
+  // function's writable MEDIA_ROOT. Keep the redirect same-origin so the admin
+  // proxy can serve it, and never redirect private uploads to public storage.
+  if (
+    process.env.VERCEL &&
+    record.visibility === "PUBLIC" &&
+    record.storageKey.startsWith("seed/")
+  ) {
+    response.redirect(307, publicMediaUrl(record));
+    return;
+  }
   if (record.mimeType === "application/pdf") {
     response.setHeader(
       "content-disposition",
