@@ -52,7 +52,8 @@ function mediaDto(asset: {
 export const publicContentRouter = Router();
 
 publicContentRouter.get("/site", publicReadCache, async (_request, response) => {
-  const [settings, menus] = await prisma.$transaction([
+  // Avoid transaction acquisition timeouts for independent public reads.
+  const [settings, menus] = await Promise.all([
     prisma.setting.findMany({
       where: { isPublic: true },
       orderBy: { key: "asc" },
@@ -186,7 +187,7 @@ publicContentRouter.get("/gallery/albums", publicReadCache, async (request, resp
         }
       : {}),
   };
-  const [total, records] = await prisma.$transaction([
+  const [total, records] = await Promise.all([
     prisma.galleryAlbum.count({ where }),
     prisma.galleryAlbum.findMany({
       where,
@@ -283,7 +284,7 @@ publicContentRouter.get("/blog", publicReadCache, async (request, response) => {
         }
       : {}),
   };
-  const [total, records] = await prisma.$transaction([
+  const [total, records] = await Promise.all([
     prisma.blogPost.count({ where }),
     prisma.blogPost.findMany({
       where,

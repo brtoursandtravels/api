@@ -138,7 +138,9 @@ packageRouter.get("/", publicReadCache, async (request, response) => {
             { featuredOrder: "asc" as const },
             { publishedAt: "desc" as const },
           ];
-  const [total, records] = await prisma.$transaction([
+  // Independent public reads do not need a transaction. Its short acquisition
+  // deadline can fail on a cold/busy serverless connection pool (P2028).
+  const [total, records] = await Promise.all([
     prisma.package.count({ where }),
     prisma.package.findMany({
       where,
