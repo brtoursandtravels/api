@@ -11,3 +11,13 @@ export const publicReadCache: RequestHandler = (request, response, next) => {
   }
   next();
 };
+
+/** Settings and entry metadata should not remain at the edge for hours. */
+export const publicEditableContentCache: RequestHandler = (request, response, next) => {
+  if (request.method === "GET") {
+    const policy = "public, max-age=0, s-maxage=30, must-revalidate";
+    response.setHeader("Cache-Control", policy);
+    response.setHeader("Vercel-CDN-Cache-Control", policy);
+  }
+  next();
+};

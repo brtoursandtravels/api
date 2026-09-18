@@ -12,7 +12,7 @@ import {
   type PublicPackageCardRecord,
   type PublicPackageRecord,
 } from "../lib/packages.js";
-import { publicReadCache } from "../middleware/public-cache.js";
+import { publicEditableContentCache, publicReadCache } from "../middleware/public-cache.js";
 import { publicPackageWhere } from "../lib/publication.js";
 
 export const packageRouter = Router();
@@ -159,7 +159,7 @@ packageRouter.get("/", publicReadCache, async (request, response) => {
   });
 });
 
-packageRouter.get("/:slug", publicReadCache, async (request, response) => {
+packageRouter.get("/:slug", publicEditableContentCache, async (request, response) => {
   const now = new Date();
   const slug = String(request.params.slug);
   const record = await prisma.package.findFirst({

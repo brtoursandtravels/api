@@ -8,6 +8,7 @@ import { z } from "zod";
 import { prisma } from "../database.js";
 import { env } from "../env.js";
 import { HttpError } from "../lib/http-error.js";
+import { activityContext, recordActivity } from "../lib/activity-log.js";
 import { publicMediaUrl } from "../lib/media-url.js";
 import { randomToken } from "../lib/security.js";
 import {
@@ -245,7 +246,7 @@ adminMediaRouter.post(
             sizeBytes: record.sizeBytes.toString(),
             visibility: record.visibility,
           },
-          requestId: String(response.locals.requestId),
+          ...activityContext(request, response),
         },
       });
       response.status(201).json({ data: mediaDto(record) });
@@ -320,6 +321,9 @@ adminMediaRouter.patch("/:id", requireCsrf, async (request, response) => {
       visibility: input.visibility,
     },
   });
+  await recordActivity(prisma, request, response, "MEDIA_UPDATED", "MediaAsset", id, {
+    after: { altText: record.altText, visibility: record.visibility },
+  });
   response.json({ data: mediaDto(record) });
 });
 
@@ -356,7 +360,12 @@ adminMediaRouter.delete("/:id", requireCsrf, async (request, response) => {
       "Remove this asset from packages, albums and articles before deleting it.",
     );
   }
-  await prisma.mediaAsset.delete({ where: { id } });
+  await prisma.$transaction(async (transaction) => {
+    await transaction.mediaAsset.delete({ where: { id } });
+    await recordActivity(transaction, request, response, "MEDIA_DELETED", "MediaAsset", id, {
+      before: { originalName: record.originalName, mimeType: record.mimeType, visibility: record.visibility },
+    });
+  });
   if (record.provider === "LOCAL")
     await unlink(absoluteMediaPath(record.storageKey)).catch(() => undefined);
   response.status(204).send();

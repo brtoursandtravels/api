@@ -6,7 +6,7 @@ import type { Prisma } from "../generated/prisma/client.js";
 import { HttpError } from "../lib/http-error.js";
 import { publicMediaUrl } from "../lib/media-url.js";
 import { readingMinutes, sanitizeRichText } from "../lib/rich-text.js";
-import { publicReadCache } from "../middleware/public-cache.js";
+import { publicEditableContentCache, publicReadCache } from "../middleware/public-cache.js";
 
 const pageQuerySchema = z.object({
   q: z.string().trim().max(120).optional(),
@@ -51,36 +51,18 @@ function mediaDto(asset: {
 
 export const publicContentRouter = Router();
 
-publicContentRouter.get("/site", publicReadCache, async (_request, response) => {
-  // Avoid transaction acquisition timeouts for independent public reads.
-  const [settings, menus] = await Promise.all([
-    prisma.setting.findMany({
-      where: { isPublic: true },
-      orderBy: { key: "asc" },
-    }),
-    prisma.navigationMenu.findMany({
-      include: {
-        items: { where: { isVisible: true }, orderBy: { sortOrder: "asc" } },
-      },
-      orderBy: { key: "asc" },
-    }),
-  ]);
+publicContentRouter.get("/site", publicEditableContentCache, async (_request, response) => {
+  const settings = await prisma.setting.findMany({
+    where: { isPublic: true },
+    orderBy: { key: "asc" },
+  });
   response.json({
     data: {
       settings: Object.fromEntries(
         settings.map((setting) => [setting.key, setting.value]),
       ),
-      menus: menus.map((menu) => ({
-        key: menu.key,
-        label: menu.label,
-        items: menu.items.map((item) => ({
-          id: item.id,
-          parentId: item.parentId,
-          label: item.label,
-          href: item.href,
-          sortOrder: item.sortOrder,
-        })),
-      })),
+      // Navigation is fixed in the website; retain the response shape for older clients.
+      menus: [],
     },
   });
 });
@@ -105,7 +87,16 @@ publicContentRouter.get("/home", publicReadCache, async (_request, response) => 
   });
 });
 
-publicContentRouter.get("/pages/:slug", publicReadCache, async (request, response) => {
+publicContentRouter.get("/pages", publicEditableContentCache, async (_request, response) => {
+  const records = await prisma.contentPage.findMany({
+    where: published(new Date()),
+    select: { slug: true, updatedAt: true },
+    orderBy: { slug: "asc" },
+  });
+  response.json({ data: records });
+});
+
+publicContentRouter.get("/pages/:slug", publicEditableContentCache, async (request, response) => {
   const slug = z.string().min(1).max(180).parse(request.params.slug);
   const page = await prisma.contentPage.findFirst({
     where: { slug, ...published(new Date()) },
@@ -329,7 +320,7 @@ publicContentRouter.get("/blog", publicReadCache, async (request, response) => {
   });
 });
 
-publicContentRouter.get("/blog/:slug", publicReadCache, async (request, response) => {
+publicContentRouter.get("/blog/:slug", publicEditableContentCache, async (request, response) => {
   const slug = z.string().min(1).max(180).parse(request.params.slug);
   const now = new Date();
   const record = await prisma.blogPost.findFirst({

@@ -3,6 +3,8 @@ import { Router } from "express";
 import { z } from "zod";
 import { prisma } from "../database.js";
 import { HttpError } from "../lib/http-error.js";
+import type { Prisma } from "../generated/prisma/client.js";
+import { activityContext, normalizeIpAddress, recordActivity } from "../lib/activity-log.js";
 import {
   optionalSession,
   requireAuth,
@@ -173,7 +175,7 @@ adminOperationsRouter.post(
             displayName: created.displayName,
             role: created.role,
           },
-          requestId: String(response.locals.requestId),
+          ...activityContext(request, response),
         },
       });
       return created;
@@ -248,7 +250,7 @@ adminOperationsRouter.put(
             role: input.role,
             status: input.status,
           },
-          requestId: String(response.locals.requestId),
+          ...activityContext(request, response),
         },
       });
       return updated;
@@ -266,20 +268,50 @@ adminOperationsRouter.get(
         page: z.coerce.number().int().min(1).max(10_000).default(1),
         pageSize: z.coerce.number().int().min(1).max(100).default(25),
         entityType: z.string().trim().max(100).optional(),
+        action: z.string().trim().max(120).optional(),
+        actor: z.string().trim().max(254).optional(),
+        ipAddress: z.string().trim().max(45).refine((value) => !value || normalizeIpAddress(value) !== null, "Enter a valid IP address.").optional(),
+        date: z.iso.date().optional(),
       })
       .parse(request.query);
-    const where = query.entityType ? { entityType: query.entityType } : {};
-    const [total, records] = await prisma.$transaction([
+    const where: Prisma.AuditLogWhereInput = {
+      ...(query.entityType ? { entityType: query.entityType } : {}),
+      ...(query.action ? { action: { contains: query.action.toUpperCase().replace(/\s+/g, "_") } } : {}),
+      ...(query.ipAddress ? { ipAddress: normalizeIpAddress(query.ipAddress)! } : {}),
+      ...(query.date ? { createdAt: {
+        gte: new Date(`${query.date}T00:00:00+05:30`),
+        lt: new Date(new Date(`${query.date}T00:00:00+05:30`).getTime() + 86_400_000),
+      } } : {}),
+      ...(query.actor ? { OR: [
+        { actorId: query.actor }, { actorName: { contains: query.actor } }, { actorEmail: { contains: query.actor } },
+        { actor: { is: { OR: [{ displayName: { contains: query.actor } }, { email: { contains: query.actor } }] } } },
+      ] } : {}),
+    };
+    const [total, records] = await Promise.all([
       prisma.auditLog.count({ where }),
       prisma.auditLog.findMany({
         where,
-        include: { actor: { select: { id: true, displayName: true } } },
-        orderBy: { createdAt: "desc" },
+        select: {
+          id: true, action: true, entityType: true, entityId: true, before: true, after: true,
+          requestId: true, ipAddress: true, userAgent: true, requestMethod: true, requestPath: true,
+          actorId: true, actorName: true, actorEmail: true, actorRole: true, createdAt: true,
+          actor: { select: { displayName: true, email: true, role: true } },
+        },
+        orderBy: [{ createdAt: "desc" }, { id: "desc" }],
         skip: (query.page - 1) * query.pageSize,
         take: query.pageSize,
       }),
     ]);
-    response.json({ data: records, meta: { ...query, total } });
+    response.setHeader("Cache-Control", "private, no-store");
+    response.json({ data: records.map(({ actorName, actorEmail, actorRole, actor, ...record }) => ({
+      ...record,
+      actor: actorName || actorEmail || actor ? {
+        id: record.actorId,
+        displayName: actorName ?? actor?.displayName ?? "Unknown user",
+        email: actorEmail ?? actor?.email ?? null,
+        role: actorRole ?? actor?.role ?? null,
+      } : null,
+    })), meta: { ...query, total } });
   },
 );
 
@@ -339,6 +371,9 @@ adminOperationsRouter.post(
         "Only failed notifications can be retried.",
       );
     }
+    await recordActivity(prisma, request, response, "NOTIFICATION_RETRIED", "NotificationOutbox", id, {
+      before: { status: "FAILED" }, after: { status: "PENDING" },
+    });
     response.status(202).json({ data: { id, status: "PENDING" } });
   },
 );

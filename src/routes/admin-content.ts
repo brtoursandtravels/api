@@ -4,7 +4,10 @@ import { z } from "zod";
 import { prisma } from "../database.js";
 import { Prisma } from "../generated/prisma/client.js";
 import { HttpError } from "../lib/http-error.js";
+import { activityContext } from "../lib/activity-log.js";
 import { sanitizeRichText } from "../lib/rich-text.js";
+import { socialLinksSchema, socialUrlSchema } from "../lib/social-links.js";
+import { pageSeoKeySchema, pageSeoSchema, staticSeoPages } from "../lib/page-seo.js";
 import {
   optionalSession,
   requireAuth,
@@ -57,7 +60,7 @@ async function audit(
       entityId,
       ...(before ? { before } : {}),
       ...(after ? { after } : {}),
-      requestId: String(response.locals.requestId),
+      ...activityContext(request, response),
     },
   });
 }
@@ -241,6 +244,7 @@ adminContentRouter.delete(
       where: { id },
       data: { status: "ARCHIVED" },
     });
+    await audit(request, response, "BLOG_CATEGORY_ARCHIVED", "BlogCategory", id);
     response.status(204).send();
   },
 );
@@ -510,9 +514,9 @@ adminContentRouter.post(
   requireCsrf,
   async (request, response) => {
     const input = tagSchema.parse(request.body);
-    response
-      .status(201)
-      .json({ data: await prisma.tag.create({ data: input }) });
+    const record = await prisma.tag.create({ data: input });
+    await audit(request, response, "BLOG_TAG_CREATED", "Tag", record.id, undefined, input);
+    response.status(201).json({ data: record });
   },
 );
 adminContentRouter.put(
@@ -520,12 +524,11 @@ adminContentRouter.put(
   requireCsrf,
   async (request, response) => {
     const input = tagSchema.parse(request.body);
-    response.json({
-      data: await prisma.tag.update({
-        where: { id: z.string().max(30).parse(request.params.id) },
-        data: input,
-      }),
+    const record = await prisma.tag.update({
+      where: { id: z.string().max(30).parse(request.params.id) }, data: input,
     });
+    await audit(request, response, "BLOG_TAG_UPDATED", "Tag", record.id, undefined, input);
+    response.json({ data: record });
   },
 );
 
@@ -623,6 +626,7 @@ adminContentRouter.delete(
       where: { id },
       data: { status: "ARCHIVED", isVisible: false },
     });
+    await audit(request, response, "HOME_SECTION_ARCHIVED", "HomepageSection", id);
     response.status(204).send();
   },
 );
@@ -653,12 +657,12 @@ adminContentRouter.post("/faqs", requireCsrf, async (request, response) => {
       ...publicationData(input),
     },
   });
+  await audit(request, response, "FAQ_CREATED", "Faq", record.id, undefined, { question: record.question, status: record.status });
   response.status(201).json({ data: record });
 });
 adminContentRouter.put("/faqs/:id", requireCsrf, async (request, response) => {
   const input = faqSchema.parse(request.body);
-  response.json({
-    data: await prisma.faq.update({
+  const record = await prisma.faq.update({
       where: { id: z.string().max(30).parse(request.params.id) },
       data: {
         packageId: input.packageId ?? null,
@@ -667,17 +671,21 @@ adminContentRouter.put("/faqs/:id", requireCsrf, async (request, response) => {
         sortOrder: input.sortOrder,
         ...publicationData(input),
       },
-    }),
+    });
+  await audit(request, response, "FAQ_UPDATED", "Faq", record.id, undefined, { question: record.question, status: record.status });
+  response.json({
+    data: record,
   });
 });
 adminContentRouter.delete(
   "/faqs/:id",
   requireCsrf,
   async (request, response) => {
-    await prisma.faq.update({
+    const record = await prisma.faq.update({
       where: { id: z.string().max(30).parse(request.params.id) },
       data: { status: "ARCHIVED" },
     });
+    await audit(request, response, "FAQ_ARCHIVED", "Faq", record.id);
     response.status(204).send();
   },
 );
@@ -725,6 +733,7 @@ adminContentRouter.post(
         ...publicationData(input),
       },
     });
+    await audit(request, response, "TESTIMONIAL_CREATED", "Testimonial", record.id, undefined, { publicName: record.publicName, status: record.status });
     response.status(201).json({ data: record });
   },
 );
@@ -733,8 +742,7 @@ adminContentRouter.put(
   requireCsrf,
   async (request, response) => {
     const input = testimonialSchema.parse(request.body);
-    response.json({
-      data: await prisma.testimonial.update({
+    const record = await prisma.testimonial.update({
         where: { id: z.string().max(30).parse(request.params.id) },
         data: {
           publicName: input.publicName,
@@ -747,7 +755,10 @@ adminContentRouter.put(
           sortOrder: input.sortOrder,
           ...publicationData(input),
         },
-      }),
+      });
+    await audit(request, response, "TESTIMONIAL_UPDATED", "Testimonial", record.id, undefined, { publicName: record.publicName, status: record.status });
+    response.json({
+      data: record,
     });
   },
 );
@@ -755,16 +766,27 @@ adminContentRouter.delete(
   "/testimonials/:id",
   requireCsrf,
   async (request, response) => {
-    await prisma.testimonial.update({
+    const record = await prisma.testimonial.update({
       where: { id: z.string().max(30).parse(request.params.id) },
       data: { status: "ARCHIVED", approved: false },
     });
+    await audit(request, response, "TESTIMONIAL_ARCHIVED", "Testimonial", record.id);
     response.status(204).send();
   },
 );
 
 const forbiddenPublicSetting =
   /(secret|password|token|database|smtp|private|credential|api[_-]?key)/i;
+adminContentRouter.get("/seo/pages", async (_request, response) => {
+  const settings = await prisma.setting.findMany({
+    where: { key: { in: staticSeoPages.map((page) => `seo.pages.${page.key}`) } },
+  });
+  response.json({ data: staticSeoPages.map((page) => {
+    const saved = settings.find((setting) => setting.key === `seo.pages.${page.key}`);
+    const parsed = pageSeoSchema.safeParse(saved?.value);
+    return { ...page, ...(parsed.success ? parsed.data : { metaTitle: "", metaDescription: "" }) };
+  }) });
+});
 const settingSchema = z
   .object({
     value: jsonValueSchema,
@@ -778,6 +800,33 @@ adminContentRouter.get("/settings", async (_request, response) =>
   }),
 );
 adminContentRouter.put(
+  "/settings/social-links",
+  requireCsrf,
+  async (request, response) => {
+    const input = socialLinksSchema.parse(request.body);
+    // Save both links together so an interrupted request cannot publish half a form.
+    const records = await prisma.$transaction(async (transaction) => {
+      const saved = [];
+      for (const network of ["instagram", "facebook"] as const) {
+        const key = `social.${network}`;
+        const data = { value: input[network], isPublic: true, description: `${network === "instagram" ? "Instagram" : "Facebook"} profile URL` };
+        saved.push(await transaction.setting.upsert({
+          where: { key }, create: { key, ...data }, update: data,
+        }));
+      }
+      await transaction.auditLog.create({
+        data: {
+          actorId: request.auth!.user.id, action: "SOCIAL_LINKS_UPDATED",
+          entityType: "Setting", entityId: "social-links",
+          after: input, ...activityContext(request, response),
+        },
+      });
+      return saved;
+    });
+    response.json({ data: records });
+  },
+);
+adminContentRouter.put(
   "/settings/:key",
   requireCsrf,
   async (request, response) => {
@@ -789,6 +838,13 @@ adminContentRouter.put(
       .regex(/^[a-z0-9._-]+$/i)
       .parse(request.params.key);
     const input = settingSchema.parse(request.body);
+    if (key.startsWith("seo.pages.")) {
+      pageSeoKeySchema.parse(key);
+      input.value = pageSeoSchema.parse(input.value);
+    }
+    if (key === "social.instagram" || key === "social.facebook") {
+      input.value = socialUrlSchema(key === "social.instagram" ? "instagram" : "facebook").parse(input.value);
+    }
     if (input.isPublic && forbiddenPublicSetting.test(key))
       throw new HttpError(
         400,
@@ -1103,10 +1159,11 @@ adminContentRouter.delete(
   "/gallery/albums/:id",
   requireCsrf,
   async (request, response) => {
-    await prisma.galleryAlbum.update({
+    const record = await prisma.galleryAlbum.update({
       where: { id: z.string().max(30).parse(request.params.id) },
       data: { status: "ARCHIVED" },
     });
+    await audit(request, response, "GALLERY_ALBUM_ARCHIVED", "GalleryAlbum", record.id);
     response.status(204).send();
   },
 );

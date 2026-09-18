@@ -76,6 +76,25 @@ Production starts therefore skip demo enquiries and other broad sample data. The
 explicitly labelled sample review cards; replace them with consented customer
 reviews and archive the samples before launch sign-off.
 
+## Activity log rollout
+
+Apply `20260919090000_activity_log_details` before serving the updated API.
+The existing Vercel `vercel-build` / `db:prepare:deploy` workflow includes this
+migration. Deploy the API before the admin interface. Existing logs are retained;
+new request details are nullable and cannot be reconstructed for historical events.
+
+Activity logs are available only to Super Admins at `/admin/audit`. New events
+capture user name/email/role snapshots, IP address, user agent, request method and
+path (without query strings). Passwords, session tokens, cookies and full request
+bodies are not collected by the context helper. Timestamps are stored in UTC and
+displayed/filtered in IST. Protect database backups because these logs contain
+personal and operational information.
+
+IP collection uses Express `req.ip` and the existing `TRUST_PROXY_HOPS` setting.
+Keep it `0` for direct local requests; configure it to match the actual trusted
+reverse-proxy topology in production. Do not blindly enable trust for arbitrary
+forwarded headers. See the [Express proxy guidance](https://expressjs.com/en/guide/behind-proxies/).
+
 ## systemd services
 
 Create `/etc/systemd/system/br-tours-api.service`:

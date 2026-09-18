@@ -98,13 +98,15 @@ for (const [path, delegate] of [
   });
 }
 
-test("site settings and navigation do not require a transaction", async () => {
+test("site settings do not query dynamic navigation or require a transaction", async () => {
   stub(prisma.setting, "findMany", async () => [{ key: "site.name", value: "BR Travels" }]);
-  stub(prisma.navigationMenu, "findMany", async () => []);
+  const navigation = stub(prisma.navigationMenu, "findMany", async () => { throw new Error("Navigation is static"); });
   const response = await request("/site");
   assert.equal(response.status, 200);
   assert.deepEqual(await response.json(), { data: { settings: { "site.name": "BR Travels" }, menus: [] } });
   assert.equal(transactionCalls, 0);
+  assert.equal(navigation.mock.callCount(), 0);
+  assert.equal(response.headers.get("cache-control"), "public, max-age=0, s-maxage=30, must-revalidate");
 });
 
 test("concurrent public page reads never acquire a database transaction", async () => {

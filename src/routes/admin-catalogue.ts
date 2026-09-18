@@ -3,6 +3,8 @@ import { z } from "zod";
 import { prisma } from "../database.js";
 import type { Prisma } from "../generated/prisma/client.js";
 import { HttpError } from "../lib/http-error.js";
+import { activityContext, recordActivity } from "../lib/activity-log.js";
+import { destinationNamesSchema, resolvePackageDestinations } from "../lib/package-destinations.js";
 import {
   optionalSession,
   requireAuth,
@@ -97,6 +99,7 @@ const packageInputSchema = z
     featuredOrder: z.number().int().min(0).max(10_000).nullable().optional(),
     isDemo: z.boolean().default(false),
     destinationIds: z.array(z.string().max(30)).max(20).default([]),
+    destinationNames: destinationNamesSchema.optional(),
     categoryIds: z.array(z.string().max(30)).max(20).default([]),
     itinerary: z.array(itinerarySchema).max(90).default([]),
     departures: z.array(departureSchema).max(200).default([]),
@@ -115,6 +118,9 @@ const packageInputSchema = z
   })
   .strict()
   .superRefine((value, context) => {
+    if (value.destinationNames !== undefined && value.destinationIds.length) {
+      context.addIssue({ code: "custom", path: ["destinationNames"], message: "Use destination names or IDs, not both." });
+    }
     if (value.nights > value.days) {
       context.addIssue({
         code: "custom",
@@ -406,12 +412,13 @@ adminCatalogueRouter.post(
       input.brochureMediaId,
     );
     const record = await prisma.$transaction(async (transaction) => {
+      const destinationIds = await resolvePackageDestinations(transaction, input);
       const created = await transaction.package.create({
         data: scalarPackageData(input),
       });
-      if (input.destinationIds.length) {
+      if (destinationIds.length) {
         await transaction.packageDestination.createMany({
-          data: input.destinationIds.map((destinationId, sortOrder) => ({
+          data: destinationIds.map((destinationId, sortOrder) => ({
             packageId: created.id,
             destinationId,
             sortOrder,
@@ -468,7 +475,7 @@ adminCatalogueRouter.post(
             title: created.title,
             status: created.status,
           },
-          requestId: String(response.locals.requestId),
+          ...activityContext(request, response),
         },
       });
       return transaction.package.findUniqueOrThrow({
@@ -500,6 +507,7 @@ adminCatalogueRouter.put(
         "The package was not found.",
       );
     const record = await prisma.$transaction(async (transaction) => {
+      const destinationIds = await resolvePackageDestinations(transaction, input);
       await transaction.package.update({
         where: { id },
         data: scalarPackageData(input),
@@ -513,9 +521,9 @@ adminCatalogueRouter.put(
       await transaction.itineraryDay.deleteMany({ where: { packageId: id } });
       await transaction.departure.deleteMany({ where: { packageId: id } });
       await transaction.packageMedia.deleteMany({ where: { packageId: id } });
-      if (input.destinationIds.length) {
+      if (destinationIds.length) {
         await transaction.packageDestination.createMany({
-          data: input.destinationIds.map((destinationId, sortOrder) => ({
+          data: destinationIds.map((destinationId, sortOrder) => ({
             packageId: id,
             destinationId,
             sortOrder,
@@ -603,7 +611,7 @@ adminCatalogueRouter.put(
             status: current.status,
           },
           after: { slug: input.slug, title: input.title, status: input.status },
-          requestId: String(response.locals.requestId),
+          ...activityContext(request, response),
         },
       });
       return transaction.package.findUniqueOrThrow({
@@ -632,7 +640,7 @@ adminCatalogueRouter.delete(
         entityId: id,
         before: { status: record.status },
         after: { status: "ARCHIVED" },
-        requestId: String(response.locals.requestId),
+        ...activityContext(request, response),
       },
     });
     response.status(204).send();
@@ -715,6 +723,8 @@ for (const resource of ["destinations", "categories"] as const) {
       const record = await (model.create as typeof prisma.destination.create)({
         data,
       } as never);
+      await recordActivity(prisma, request, response, resource === "destinations" ? "DESTINATION_CREATED" : "CATEGORY_CREATED",
+        resource === "destinations" ? "Destination" : "Category", record.id, { after: { name: record.name, slug: record.slug, status: record.status } });
       response.status(201).json({
         data:
           resource === "destinations"
@@ -755,6 +765,8 @@ for (const resource of ["destinations", "categories"] as const) {
         where: { id },
         data,
       } as never);
+      await recordActivity(prisma, request, response, resource === "destinations" ? "DESTINATION_UPDATED" : "CATEGORY_UPDATED",
+        resource === "destinations" ? "Destination" : "Category", id, { after: { name: record.name, slug: record.slug, status: record.status } });
       response.json({
         data:
           resource === "destinations"
@@ -772,6 +784,8 @@ for (const resource of ["destinations", "categories"] as const) {
         where: { id },
         data: { status: "ARCHIVED" },
       } as never);
+      await recordActivity(prisma, request, response, resource === "destinations" ? "DESTINATION_ARCHIVED" : "CATEGORY_ARCHIVED",
+        resource === "destinations" ? "Destination" : "Category", id, { after: { status: "ARCHIVED" } });
       response.status(204).send();
     },
   );

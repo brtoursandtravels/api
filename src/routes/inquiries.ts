@@ -5,6 +5,7 @@ import { prisma } from "../database.js";
 import { env } from "../env.js";
 import { Prisma, type EnquiryStatus } from "../generated/prisma/client.js";
 import { HttpError } from "../lib/http-error.js";
+import { activityContext, recordActivity } from "../lib/activity-log.js";
 import { publicPackageWhere } from "../lib/publication.js";
 import { sha256 } from "../lib/security.js";
 import {
@@ -519,7 +520,7 @@ adminInquiriesRouter.patch(
           entityId: id,
           before: { status: current.status },
           after: { status: input.status, reason: input.reason ?? null },
-          requestId: String(response.locals.requestId),
+          ...activityContext(request, response),
         },
       });
       return record;
@@ -557,6 +558,9 @@ adminInquiriesRouter.post(
         body: input.body,
       },
       include: { author: { select: { id: true, displayName: true } } },
+    });
+    await recordActivity(prisma, request, response, "ENQUIRY_NOTE_ADDED", "Enquiry", id, {
+      after: { noteId: note.id },
     });
     response
       .status(201)
@@ -597,8 +601,9 @@ adminInquiriesRouter.patch(
         "ENQUIRY_NOT_FOUND",
         "The enquiry was not found.",
       );
-    response.json({
-      data: { id: updated.id, assignedToId: updated.assignedToId },
+    await recordActivity(prisma, request, response, "ENQUIRY_ASSIGNED", "Enquiry", id, {
+      after: { assignedToId: updated.assignedToId },
     });
+    response.json({ data: { id: updated.id, assignedToId: updated.assignedToId } });
   },
 );

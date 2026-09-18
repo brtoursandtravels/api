@@ -597,11 +597,23 @@ paths:
       }
   /admin/audit-logs:
     get:
-      {
-        tags: [Admin operations],
-        security: [{ cookieAuth: [] }],
-        responses: { "200": { description: Super-Admin-only audit page } },
-      }
+      tags: [Admin operations]
+      security: [{ cookieAuth: [] }]
+      summary: Activity logs (Super Admin only)
+      description: Returns actions, affected records, historical user name/email/role, IP address, UTC timestamp, request path/method, browser user agent and available before/after context. Missing historical details are null. Filters apply before pagination; date uses Asia/Kolkata (IST).
+      parameters:
+        - { in: query, name: page, schema: { type: integer, minimum: 1, default: 1 } }
+        - { in: query, name: pageSize, schema: { type: integer, minimum: 1, maximum: 100, default: 25 } }
+        - { in: query, name: entityType, schema: { type: string, maxLength: 100 } }
+        - { in: query, name: action, schema: { type: string, maxLength: 120 }, description: Partial action code or words such as package updated }
+        - { in: query, name: actor, schema: { type: string, maxLength: 254 }, description: User name or email fragment, or exact user ID }
+        - { in: query, name: ipAddress, schema: { type: string, maxLength: 45 }, description: Exact IPv4 or IPv6 address }
+        - { in: query, name: date, schema: { type: string, format: date }, description: Calendar date in IST }
+      responses:
+        "200": { description: Paginated private activity logs; Cache-Control is private and no-store }
+        "400": { description: Invalid filter or pagination }
+        "401": { description: Authentication required }
+        "403": { description: Super Admin role required }
   /admin/notifications:
     get:
       {

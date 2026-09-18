@@ -636,11 +636,21 @@ model AuditLog {
   after      Json?
   requestId  String?    @db.VarChar(64)
   ipHash     String?    @db.Char(64)
+  ipAddress  String?    @db.VarChar(45)
+  userAgent  String?    @db.VarChar(512)
+  actorName  String?    @db.VarChar(120)
+  actorEmail String?    @db.VarChar(254)
+  actorRole  String?    @db.VarChar(40)
+  requestMethod String? @db.VarChar(10)
+  requestPath String?   @db.VarChar(500)
   createdAt  DateTime   @default(now()) @db.DateTime(3)
   actor      AdminUser? @relation("AuditActor", fields: [actorId], references: [id], onDelete: SetNull)
 
   @@index([entityType, entityId, createdAt])
   @@index([actorId, createdAt])
+  @@index([createdAt, id])
+  @@index([action, createdAt])
+  @@index([ipAddress, createdAt])
 }
 
 model SlugRedirect {

@@ -4,6 +4,7 @@ import { z } from "zod";
 import { prisma } from "../database.js";
 import { env } from "../env.js";
 import { HttpError } from "../lib/http-error.js";
+import { activityContext } from "../lib/activity-log.js";
 import {
   clearSessionCookie,
   createPreAuthCsrfToken,
@@ -125,8 +126,7 @@ authRouter.post(
           action: "AUTH_LOGIN",
           entityType: "AdminUser",
           entityId: user.id,
-          requestId: String(response.locals.requestId),
-          ipHash: requestFingerprint(request),
+          ...activityContext(request, response, user),
         },
       });
       return created;
@@ -162,8 +162,7 @@ authRouter.post(
           action: "AUTH_LOGOUT",
           entityType: "AdminUser",
           entityId: request.auth!.user.id,
-          requestId: String(response.locals.requestId),
-          ipHash: requestFingerprint(request),
+          ...activityContext(request, response),
         },
       }),
     ]);
@@ -195,8 +194,7 @@ authRouter.put(
         entityType: "AdminUser",
         entityId: user.id,
         after: { displayName: user.displayName },
-        requestId: String(response.locals.requestId),
-        ipHash: requestFingerprint(request),
+        ...activityContext(request, response),
       },
     });
     response.json({ data: { user } });
@@ -237,8 +235,7 @@ authRouter.post(
           action: "AUTH_PASSWORD_CHANGED",
           entityType: "AdminUser",
           entityId: user.id,
-          requestId: String(response.locals.requestId),
-          ipHash: requestFingerprint(request),
+          ...activityContext(request, response),
         },
       }),
     ]);
@@ -345,8 +342,7 @@ authRouter.post(
           action: "AUTH_PASSWORD_RESET",
           entityType: "AdminUser",
           entityId: resetToken.userId,
-          requestId: String(response.locals.requestId),
-          ipHash: requestFingerprint(request),
+          ...activityContext(request, response, resetToken.user),
         },
       });
     });
