@@ -277,8 +277,10 @@ async function createMissingPackages(mediaByKey: Map<string, string>) {
         accommodationNotes: defaults.accommodationNotes,
         importantInformation: defaults.importantInformation,
         cancellationRules:
-          "Cancellation terms depend on the confirmed suppliers and travel dates and are provided in writing with the final quotation.",
-        seoTitle: `${seed.title} | BR Tours and Travels`,
+          "cancellationRules" in seed
+            ? seed.cancellationRules
+            : "Cancellation terms depend on the confirmed suppliers and travel dates and are provided in writing with the final quotation.",
+        seoTitle: `${seed.title} | BR Tours and Travels`.slice(0, 70),
         seoDescription: seed.summary.slice(0, 170),
         status: "PUBLISHED",
         publishedAt,

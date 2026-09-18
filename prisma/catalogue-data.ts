@@ -71,6 +71,24 @@ export const tourDestinations = [
     summary:
       "Sacred Ujjain and Omkareshwar journeys paired with Indore heritage, river ghats and central India's historic temple landscapes.",
   },
+  {
+    slug: "gujarat-coast",
+    name: "Gujarat Coast & Gir",
+    sortOrder: 9,
+    image: "gujarat-dwarka.webp",
+    altText: "Dwarkadhish Temple beside the Gomti riverfront at sunrise",
+    summary:
+      "Temple towns, historic island-coast heritage, Arabian Sea beaches and the wildlife landscapes of Sasan Gir.",
+  },
+  {
+    slug: "goa-maharashtra",
+    name: "Goa & Maharashtra",
+    sortOrder: 10,
+    image: "goa-sunset-beach.webp",
+    altText: "Palm-lined Goa beach beside the Arabian Sea at sunset",
+    summary:
+      "Goa's relaxed coast paired with the green hill stations, viewpoints and family attractions of Maharashtra.",
+  },
 ] as const;
 
 export const tourNavigation = [
@@ -420,6 +438,145 @@ export const tourPackages = [
     ],
   },
   {
+    slug: "diwali-lonavala-khandala-matheran-mahabaleshwar",
+    title: "Diwali Special: Lonavala, Khandala, Matheran & Mahabaleshwar",
+    destinationSlug: "maharashtra",
+    categorySlug: "family",
+    startingCity: "Ahmedabad",
+    startingPrice: "13499.00",
+    durationDays: 5,
+    summary:
+      "A five-day Diwali holiday from Ahmedabad covering Matheran, Lonavala, Khandala, Mahabaleshwar and Panchgani.",
+    overview:
+      "Travel from Ahmedabad by 2x2 AC sleeper luxury coach for a five-day, four-night hill-station holiday through Matheran, Lonavala, Khandala, Mahabaleshwar and Panchgani. The listed fare is INR 13,499 per person. The journey begins with an afternoon departure before Day 1. Exact departure dates, pickup details, sightseeing order and live availability are confirmed before booking.",
+    highlights: [
+      "Matheran sightseeing and hill-station stay",
+      "Lonavala and Khandala landscapes",
+      "Two nights in Mahabaleshwar",
+      "Panchgani and Mapro Garden",
+      "2x2 AC sleeper luxury coach from Ahmedabad",
+      "Five-day, four-night Diwali holiday",
+    ],
+    inclusions: [
+      "2x2 AC sleeper luxury coach travel from Ahmedabad",
+      "Morning tea and breakfast",
+      "Lunch",
+      "Light evening meal",
+      "AC hotel accommodation for four nights",
+    ],
+    exclusions: [
+      "Personal expenses and optional purchases",
+      "Attraction tickets, activity charges or guides unless specifically confirmed",
+      "Local transport charges unless included in the final written confirmation",
+      "Meals and services not listed under inclusions",
+    ],
+    transportInformation:
+      "The main journey is planned by 2x2 AC sleeper luxury coach from Ahmedabad. Where the coach cannot access a sightseeing point, a tempo traveller or car may be used. Final vehicle arrangements, pickup point and departure time are confirmed before travel.",
+    accommodationNotes:
+      "The four planned hotel nights are Matheran, Lonavala and two nights in Mahabaleshwar. AC hotel names and room-sharing arrangements are confirmed with the final booking.",
+    importantInformation:
+      "Matheran and other sightseeing may involve substantial walking. The organiser may change the programme because of weather, road conditions, local access or operational requirements. Departure dates and live availability are confirmed before booking.",
+    cancellationRules:
+      "The supplied poster states that a confirmed booking is non-refundable if cancelled. The final written cancellation terms must be reviewed and accepted before payment.",
+    itinerary: [
+      [
+        "Matheran",
+        "After the preceding afternoon departure from Ahmedabad, arrive for Matheran sightseeing on foot and stay overnight in Matheran.",
+      ],
+      [
+        "Matheran to Lonavala",
+        "Travel from Matheran to Lonavala, explore selected Lonavala and Khandala sights, and stay overnight in Lonavala.",
+      ],
+      [
+        "Lonavala to Mahabaleshwar",
+        "Continue from Lonavala to Mahabaleshwar and settle in for the first overnight stay.",
+      ],
+      [
+        "Mahabaleshwar",
+        "Enjoy selected Mahabaleshwar viewpoints and local sightseeing before a second overnight stay.",
+      ],
+      [
+        "Panchgani and return",
+        "Visit Panchgani and Mapro Garden, then begin the return journey to Ahmedabad.",
+      ],
+    ],
+  },
+  {
+    slug: "diwali-goa-mahabaleshwar-lonavala-imagica",
+    title: "Diwali Special: Goa, Mahabaleshwar, Lonavala & Imagica",
+    destinationSlug: "goa-maharashtra",
+    categorySlug: "family",
+    startingCity: "Ahmedabad",
+    startingPrice: "17999.00",
+    durationDays: 8,
+    summary:
+      "An eight-day Diwali holiday from Ahmedabad with three nights in Goa, two in Mahabaleshwar and two in Lonavala.",
+    overview:
+      "Enjoy a seven-night holiday combining Goa's coast with Mahabaleshwar, Lonavala, Khandala and the Imagica amusement-park stop near Khopoli. The starting fare is INR 17,999 per person for an upper-sofa seat, while the lower-sofa option is INR 19,999 per person. Exact departure dates, pickup details, vehicle configuration, sightseeing order and live availability are confirmed before booking.",
+    highlights: [
+      "Three nights in Goa with sightseeing",
+      "Two nights in Mahabaleshwar",
+      "Two nights in Lonavala",
+      "Lonavala and Khandala sightseeing",
+      "Imagica amusement-park stop",
+      "Upper-sofa fare from INR 17,999 per person",
+      "Lower-sofa option at INR 19,999 per person",
+    ],
+    inclusions: [
+      "Coach travel from Ahmedabad in the confirmed sofa seating category",
+      "Morning tea and breakfast",
+      "Lunch",
+      "Light evening meal",
+      "AC hotel accommodation for seven nights",
+    ],
+    exclusions: [
+      "Personal expenses and optional purchases",
+      "Imagica admission and ride tickets unless specifically confirmed",
+      "Other attraction tickets, activities, guides or local transport unless specifically confirmed",
+      "Meals and services not listed under inclusions",
+    ],
+    transportInformation:
+      "Upper-sofa travel starts at INR 17,999 per person; lower-sofa travel is INR 19,999 per person. The final coach type, seat or berth layout, Ahmedabad pickup point and departure time are confirmed before booking.",
+    accommodationNotes:
+      "The planned stay includes three nights in Goa, two nights in Mahabaleshwar and two nights in Lonavala. AC hotel names and room-sharing arrangements are confirmed with the final booking.",
+    importantInformation:
+      "The suggested eight-day itinerary is based on seven hotel nights: three in Goa, two in Mahabaleshwar and two in Lonavala. Final travel days and sightseeing order are confirmed before booking. The organiser may change the programme because of weather, road conditions, attraction schedules or operational requirements.",
+    itinerary: [
+      [
+        "Arrive in Goa",
+        "Travel from Ahmedabad and begin the Goa stay with selected sightseeing, subject to the final arrival time.",
+      ],
+      [
+        "Goa sightseeing",
+        "Explore selected beaches, heritage areas and coastal viewpoints during the second day in Goa.",
+      ],
+      [
+        "Goa at leisure",
+        "Continue the planned Goa sightseeing with time to enjoy the coast before the third overnight stay.",
+      ],
+      [
+        "Goa to Mahabaleshwar",
+        "Travel from Goa to Mahabaleshwar and settle in for the first hill-station night.",
+      ],
+      [
+        "Mahabaleshwar",
+        "Visit selected Mahabaleshwar viewpoints and local sights before the second overnight stay.",
+      ],
+      [
+        "Mahabaleshwar to Lonavala",
+        "Continue to Lonavala for local sightseeing and the first overnight stay in the Lonavala area.",
+      ],
+      [
+        "Khandala and Imagica",
+        "Explore selected Lonavala and Khandala sights and visit the Imagica amusement-park stop according to the confirmed ticket plan.",
+      ],
+      [
+        "Return to Ahmedabad",
+        "Check out after the final Lonavala stay and begin the return journey to Ahmedabad.",
+      ],
+    ],
+  },
+  {
     slug: "kashmir-valley-retreat",
     title: "Kashmir Valley Retreat",
     destinationSlug: "kashmir",
@@ -581,9 +738,152 @@ export const tourPackages = [
       ["Departure", "Return to Jodhpur or connect with the selected onward plan."],
     ],
   },
+  {
+    slug: "diwali-jaisalmer-sam-desert-tanot-longewala",
+    title: "Diwali Special: Jaisalmer & Sam Desert",
+    destinationSlug: "jaisalmer",
+    categorySlug: "family",
+    startingCity: "Ahmedabad",
+    startingPrice: "7999.00",
+    durationDays: 3,
+    summary:
+      "A three-day, two-night Diwali journey from Ahmedabad covering Jaisalmer, Tanot Mata, Longewala, Sam Sand Dunes, Kuldhara and Ranuja.",
+    overview:
+      "Travel from Ahmedabad by 2x2 AC sleeper coach for Jaisalmer's fort, havelis, Bada Bagh and Gadisar Lake, followed by Tanot Mata, Longewala and an evening in the Sam desert. The return route includes Kuldhara, Ramdevpir Temple at Ranuja and a planned Bullet Baba stop. Per-person fares are INR 7,999 with four-person room sharing, INR 8,999 with three-person sharing and INR 9,999 with two-person sharing. The two overnight stays are a Jaisalmer hotel and a desert tent camp. Departure dates, accommodation and the final travel plan are confirmed before booking.",
+    highlights: [
+      "Jaisalmer Golden Fort and heritage havelis",
+      "Bada Bagh and Gadisar Lake",
+      "Tanot Mata darshan and Longewala visit",
+      "Sam Sand Dunes, jeep safari, camel ride and sunset",
+      "Desert tent stay with a Rajasthani cultural evening, DJ and Garba",
+      "Kuldhara village, Ramdevpir Temple at Ranuja and Bullet Baba",
+      "Four-person sharing: INR 7,999 per person",
+      "Three-person sharing: INR 8,999 per person",
+      "Two-person sharing: INR 9,999 per person",
+    ],
+    inclusions: [
+      "2x2 AC sleeper coach travel from Ahmedabad",
+      "Morning tea and breakfast",
+      "Lunch",
+      "Light evening meal",
+      "One night in an AC hotel in Jaisalmer",
+      "One night in a desert tent camp at Sam",
+    ],
+    exclusions: [
+      "Personal expenses and optional purchases",
+      "Monument entry tickets, guides and temple donations unless specifically confirmed",
+      "Optional activities and local transport not included in the final quotation",
+      "Meals and services not listed under inclusions",
+    ],
+    transportInformation:
+      "Travel is planned by 2x2 AC sleeper coach, with an overnight departure from Ahmedabad before the first sightseeing day and a return journey after the third day's evening meal. Final pickup details and timings are confirmed before travel.",
+    accommodationNotes:
+      "Night 1 is in a Jaisalmer AC hotel; night 2 is in a desert tent camp at Sam. The per-person fare is INR 7,999 for four-person room sharing, INR 8,999 for three-person sharing or INR 9,999 for two-person sharing. Hotel and camp names, tent facilities and sleeping arrangements are confirmed before booking.",
+    importantInformation:
+      "The three sightseeing days are accompanied by overnight outward and return coach journeys. Longewala and Tanot visits depend on local access. Jeep safari, camel ride and cultural-programme arrangements, including any separate charges, are confirmed in the final quotation. The Bullet Baba stop and sightseeing order depend on the final route. The organiser may adjust the programme for weather, traffic or local conditions.",
+    itinerary: [
+      [
+        "Jaisalmer city, Bada Bagh and Gadisar Lake",
+        "After the overnight coach journey from Ahmedabad, arrive in Jaisalmer for tea, breakfast and time to freshen up. Visit the Golden Fort, Patwon Ki Haveli and Salim Shah Haveli. After lunch, explore Bada Bagh and Gadisar Lake. Stay overnight in a Jaisalmer hotel.",
+      ],
+      [
+        "Longewala, Tanot Mata and Sam Sand Dunes",
+        "After tea and breakfast, visit Longewala and take darshan at Tanot Mata Temple. Reach Sam Sand Dunes in the late afternoon for the planned jeep safari, camel ride and sunset. Enjoy a Rajasthani cultural programme, DJ and Garba before the overnight tent stay.",
+      ],
+      [
+        "Kuldhara, Ranuja and return to Ahmedabad",
+        "After tea and breakfast, visit Kuldhara village and continue for Ramdevpir darshan at Ranuja. Include the planned Bullet Baba stop according to the confirmed route. After the evening meal, begin the return journey to Ahmedabad.",
+      ],
+    ],
+  },
+  {
+    slug: "dwarka-somnath-diu-sasan-gir",
+    title: "Dwarka, Somnath, Diu & Sasan Gir",
+    destinationSlug: "gujarat-coast",
+    categorySlug: "family",
+    startingCity: "Ahmedabad",
+    startingPrice: "7000.00",
+    durationDays: 4,
+    summary:
+      "A four-day Gujarat journey from Ahmedabad linking Dwarka and Somnath with Diu's coast and the wildlife landscapes of Sasan Gir.",
+    overview:
+      "Travel from Ahmedabad on a compact three-night, four-day circuit through Dwarka, Somnath, Diu and Sasan Gir. The route combines temple visits, coastal heritage, Nagoa Beach and Gir's dry-forest landscape. The listed fare is INR 7,000 per person. Departure dates, pickup details, transport, safari arrangements and live availability are confirmed before booking.",
+    highlights: [
+      "Dwarkadhish Temple and Bet Dwarka",
+      "Nageshwar Jyotirlinga and Somnath Temple",
+      "Diu Fort, Gangeshwar Mahadev and Sunset Point",
+      "Nagoa Beach",
+      "Sasan Gir wildlife landscape",
+      "Three-night, four-day circuit from Ahmedabad",
+    ],
+    inclusions: [
+      "Morning tea and breakfast",
+      "Lunch",
+      "Light evening meal",
+      "AC hotel accommodation",
+    ],
+    exclusions: [
+      "Personal expenses and optional purchases",
+      "Temple donations, VIP darshan or special-entry charges",
+      "Gir safari permits, entry tickets and local safari vehicle charges unless specifically confirmed",
+      "Attraction tickets, guides or local transport unless specifically confirmed",
+      "Meals and services not listed under inclusions",
+    ],
+    transportInformation:
+      "The poster does not specify a vehicle type. The final transport, Ahmedabad pickup point, departure time and route are confirmed before booking.",
+    accommodationNotes:
+      "AC hotel accommodation is included. Hotel names, overnight locations and room-sharing arrangements are confirmed with the final booking.",
+    importantInformation:
+      "Gir access and safari availability depend on permits, park schedules and local rules. Sightseeing order may change with weather, traffic, temple timings and local access. Departure dates and live availability are confirmed before booking.",
+    itinerary: [
+      [
+        "Dwarka",
+        "Visit Dwarkadhish Temple, Nageshwar Jyotirlinga, Rukmini Temple, Gomti Ghat, Bet Dwarka, Gopi Talav and Shivrajpur Beach.",
+      ],
+      [
+        "Somnath and Diu",
+        "Continue through Somnath and explore Diu Fort, Gangeshwar Mahadev, Sunset Point and Diu Museum, subject to local timings.",
+      ],
+      [
+        "Nagoa Beach",
+        "Spend time at Nagoa Beach and enjoy Diu's relaxed coastal setting.",
+      ],
+      [
+        "Sasan Gir and return",
+        "Visit the Sasan Gir area before beginning the return journey. Any wildlife safari is subject to separate permit and booking confirmation.",
+      ],
+    ],
+  },
 ] as const;
 
 export const tourPackageMedia = {
+  "diwali-jaisalmer-sam-desert-tanot-longewala": [
+    {
+      image: "jaisalmer-sam-sand-dunes.webp",
+      altText: "Camel on the golden Sam Sand Dunes near Jaisalmer at sunset",
+      caption: "Sunset over the Sam Sand Dunes",
+    },
+    {
+      image: "jaisalmer-desert-tent-camp.webp",
+      altText: "Illustrative desert camp with canvas tents and warm lanterns near Sam",
+      caption: "Illustrative desert tent camp setting near Sam",
+    },
+    {
+      image: "jaisalmer-bada-bagh.webp",
+      altText: "Golden sandstone cenotaph pavilions at Bada Bagh near Jaisalmer",
+      caption: "Bada Bagh's sandstone pavilions",
+    },
+    {
+      image: "jaisalmer-gadisar-lake.webp",
+      altText: "Sandstone pavilions reflected in the calm waters of Gadisar Lake",
+      caption: "Gadisar Lake and its waterside architecture",
+    },
+    {
+      image: "jaisalmer-golden-fort.webp",
+      altText: "Golden Jaisalmer Fort rising beyond the dunes of the Thar Desert",
+      caption: "Jaisalmer's Golden Fort",
+    },
+  ],
   "amarnath-vaishno-devi-yatra": [
     {
       image: "amarnath-vaishno-devi-vaishno-devi-bhawan.webp",
@@ -713,6 +1013,77 @@ export const tourPackageMedia = {
       image: "maharashtra-hills-mahabaleshwar.webp",
       altText: "Green tableland cliffs and deep forested valley near Mahabaleshwar",
       caption: "Mahabaleshwar's Western Ghats scenery",
+    },
+  ],
+  "diwali-lonavala-khandala-matheran-mahabaleshwar": [
+    {
+      image: "maharashtra-hills-matheran.webp",
+      altText: "Red-earth walking trail winding through Matheran's misty green forest",
+      caption: "Matheran's forest trails",
+    },
+    {
+      image: "maharashtra-hills-lonavala.webp",
+      altText: "Misty green Sahyadri valley and seasonal waterfall near Lonavala",
+      caption: "Lonavala's monsoon landscape",
+    },
+    {
+      image: "maharashtra-hills-khandala.webp",
+      altText: "Cloud-wrapped green ridges and winding mountain road near Khandala",
+      caption: "Khandala's rain-washed valley",
+    },
+    {
+      image: "maharashtra-hills-mahabaleshwar.webp",
+      altText: "Green tableland cliffs and deep forested valley near Mahabaleshwar",
+      caption: "Mahabaleshwar's Western Ghats scenery",
+    },
+  ],
+  "diwali-goa-mahabaleshwar-lonavala-imagica": [
+    {
+      image: "goa-sunset-beach.webp",
+      altText: "Palm-lined Goa beach beside the Arabian Sea at sunset",
+      caption: "A warm sunset on Goa's palm-lined coast",
+    },
+    {
+      image: "maharashtra-hills-mahabaleshwar.webp",
+      altText: "Green tableland cliffs and deep forested valley near Mahabaleshwar",
+      caption: "Mahabaleshwar's Western Ghats scenery",
+    },
+    {
+      image: "maharashtra-hills-lonavala.webp",
+      altText: "Misty green Sahyadri valley and seasonal waterfall near Lonavala",
+      caption: "Lonavala's monsoon landscape",
+    },
+    {
+      image: "maharashtra-hills-khandala.webp",
+      altText: "Cloud-wrapped green ridges and winding mountain road near Khandala",
+      caption: "Khandala's rain-washed valley",
+    },
+    {
+      image: "maharashtra-imagica-theme-park.webp",
+      altText: "Illustrative amusement park with roller coasters and a landscaped lagoon near Khopoli",
+      caption: "An illustrative view of the amusement-park experience",
+    },
+  ],
+  "dwarka-somnath-diu-sasan-gir": [
+    {
+      image: "gujarat-dwarka.webp",
+      altText: "Dwarkadhish Temple beside the Gomti riverfront at sunrise",
+      caption: "Dwarkadhish Temple and the Gomti riverfront",
+    },
+    {
+      image: "gujarat-somnath.webp",
+      altText: "Somnath Temple overlooking the Arabian Sea at golden hour",
+      caption: "Somnath Temple beside the Arabian Sea",
+    },
+    {
+      image: "gujarat-diu.webp",
+      altText: "Historic Diu Fort and lighthouse above the blue Arabian Sea",
+      caption: "The coastal ramparts of Diu Fort",
+    },
+    {
+      image: "gujarat-sasan-gir.webp",
+      altText: "Asiatic lion walking through the dry deciduous forest of Sasan Gir",
+      caption: "Asiatic lion habitat in Sasan Gir",
     },
   ],
 } as const;
