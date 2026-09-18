@@ -268,6 +268,10 @@ async function seedReferenceContent(mediaByDestination: Map<string, string>) {
       "importantInformation" in seed
         ? seed.importantInformation
         : "The displayed price is an indicative starting point, not live availability. Mountain, pilgrimage and weather-sensitive routes may change for safety or local authority requirements.";
+    const cancellationRules =
+      "cancellationRules" in seed
+        ? seed.cancellationRules
+        : "Cancellation terms depend on the confirmed suppliers and travel dates and are provided in writing with the final quotation.";
     const item = await prisma.package.upsert({
       where: { slug: seed.slug },
       update: {
@@ -286,8 +290,7 @@ async function seedReferenceContent(mediaByDestination: Map<string, string>) {
         transportInformation,
         accommodationNotes,
         importantInformation,
-        cancellationRules:
-          "Cancellation terms depend on the confirmed suppliers and travel dates and are provided in writing with the final quotation.",
+        cancellationRules,
         seoTitle: `${seed.title} | BR Tours and Travels`.slice(0, 70),
         seoDescription: seed.summary.slice(0, 170),
         status: "PUBLISHED",
@@ -313,8 +316,7 @@ async function seedReferenceContent(mediaByDestination: Map<string, string>) {
         transportInformation,
         accommodationNotes,
         importantInformation,
-        cancellationRules:
-          "Cancellation terms depend on the confirmed suppliers and travel dates and are provided in writing with the final quotation.",
+        cancellationRules,
         seoTitle: `${seed.title} | BR Tours and Travels`.slice(0, 70),
         seoDescription: seed.summary.slice(0, 170),
         status: "PUBLISHED",
