@@ -94,7 +94,7 @@ export const tourDestinations = [
     name: "Sikkim & Darjeeling",
     sortOrder: 11,
     image: "sikkim-gangtok.webp",
-    altText: "AI-generated illustration of Gangtok's hillside town and Himalayan landscape",
+    altText: "Gangtok's hillside town and Himalayan landscape",
     summary:
       "Himalayan towns, alpine valleys and mountain lakes across Gangtok and Lachung, paired with Darjeeling's tea gardens and heritage railway.",
   },
@@ -103,7 +103,7 @@ export const tourDestinations = [
     name: "East India",
     sortOrder: 12,
     image: "east-india-puri-jagannath.webp",
-    altText: "AI-generated illustration of Jagannath Temple's exterior in Puri",
+    altText: "Jagannath Temple's exterior in Puri",
     summary:
       "Pilgrimage and heritage journeys linking Kolkata, Gangasagar, Puri, Konark and Bhubaneswar with the sacred cities and riverfronts along the wider route.",
   },
@@ -112,7 +112,7 @@ export const tourDestinations = [
     name: "South India",
     sortOrder: 13,
     image: "south-india-rameswaram.webp",
-    altText: "AI-generated illustration of the Ramanathaswamy Temple exterior in Rameswaram",
+    altText: "The Ramanathaswamy Temple exterior in Rameswaram",
     summary:
       "Temple towns, coastal pilgrimage sites, hill stations and royal heritage across Tirupati, Rameswaram, Kanyakumari, Ooty and Mysore.",
   },
@@ -121,7 +121,7 @@ export const tourDestinations = [
     name: "Thailand",
     sortOrder: 14,
     image: "thailand-pattaya-bay.webp",
-    altText: "AI-generated illustration of Pattaya's crescent bay from an elevated viewpoint",
+    altText: "Pattaya's crescent bay from an elevated viewpoint",
     summary:
       "Coastal sightseeing in Pattaya, a Coral Island excursion and Bangkok temple visits, with hotel stays and transfers tailored to the confirmed trip plan.",
   },
@@ -1030,7 +1030,7 @@ export const tourPackages = [
     accommodationNotes:
       "Seven nights: three in Gangtok, two in Lachung and two in Darjeeling. Reference hotels are Zambala By Red Knott in Gangtok, Le Coxy Resort in Lachung and Little Tibet Resort in Darjeeling, or similar properties. The reference group allocation is four deluxe rooms with extra beds; this is a group arrangement, not four rooms per adult. Final hotels, room sharing and extra-bed arrangements are confirmed before payment.",
     importantInformation:
-      "Payment policy: 50% advance is required for booking confirmation; the remaining balance is due 10 days before travel. The listed price is INR 21,000 per adult. Nathula Pass is optional and its permit costs INR 4,500 per cab; the Zero Point permit costs INR 4,000 per cab. Mount Katao is optional and subject to permit confirmation. High-altitude excursions and sightseeing depend on permits, weather, road access and available time. Confirm departure dates, permits, room sharing, vehicle allocation and any optional activity costs before booking. Gallery images are AI-generated destination illustrations, not photographs of the booked hotels or guaranteed views.",
+      "Payment policy: 50% advance is required for booking confirmation; the remaining balance is due 10 days before travel. The listed price is INR 21,000 per adult. Nathula Pass is optional and its permit costs INR 4,500 per cab; the Zero Point permit costs INR 4,000 per cab. Mount Katao is optional and subject to permit confirmation. High-altitude excursions and sightseeing depend on permits, weather, road access and available time. Confirm departure dates, permits, room sharing, vehicle allocation and any optional activity costs before booking. Images are for reference only. Actual hotels and views may vary.",
     cancellationRules:
       "More than 30 days before travel: INR 2,000 per person. 15-30 days before travel: 35% of the package cost. 7-14 days before travel: 75% of the package cost. Less than 7 days before travel: 100% of the package cost. No refund is applicable for unused services.",
     itinerary: [
@@ -1113,7 +1113,7 @@ export const tourPackages = [
     accommodationNotes:
       "Room accommodation is on a four-person sharing basis. The programme lists overnight stays in Haridwar, Barkot, Uttarkashi, Guptkashi, Kedarnath, Pipalkoti and Jaisalmer. The 16-day duration also includes overnight coach travel; it does not promise 15 hotel nights. The poster leaves some overnight arrangements unspecified, including Day 14, so property names, facilities and the complete overnight plan must be confirmed before booking.",
     importantInformation:
-      "Confirm departure dates, Char Dham access and registration requirements, the Kedarnath overnight arrangement and the full return schedule before booking. Temple visits, Tungnath and border-area sightseeing depend on seasonal access, weather and local conditions. The organiser may change the programme for road closures, traffic, weather or other unavoidable circumstances. Travellers are requested to cooperate with the final arrangements. Local vehicles, entry tickets, boating, ropeways, horse rides and personal expenses are extra; the listed Jaisalmer camel and jeep safaris are included. Gallery images are existing AI-generated destination illustrations, not photographs of the booked accommodation or guaranteed views.",
+      "Confirm departure dates, Char Dham access and registration requirements, the Kedarnath overnight arrangement and the full return schedule before booking. Temple visits, Tungnath and border-area sightseeing depend on seasonal access, weather and local conditions. The organiser may change the programme for road closures, traffic, weather or other unavoidable circumstances. Travellers are requested to cooperate with the final arrangements. Local vehicles, entry tickets, boating, ropeways, horse rides and personal expenses are extra; the listed Jaisalmer camel and jeep safaris are included. Images are for reference only. Actual hotels and views may vary.",
     itinerary: [
       [
         "Ahmedabad to Jaipur",
@@ -1223,7 +1223,7 @@ export const tourPackages = [
     accommodationNotes:
       "Accommodation is in AC rooms on a four-person sharing basis. Listed hotel stops are Nashik on Day 2, the Grishneshwar area on Day 3, Tulja Bhavani on Day 5 and Ujjain on Days 8 and 9. Days 4, 6 and 7 explicitly involve overnight travel, and the first night is the onward journey to Nashik. The ten-day programme therefore does not mean nine hotel nights. Hotel names, facilities, the first-night arrangement and the complete overnight schedule are confirmed before booking.",
     importantInformation:
-      "The route follows the supplied Shravan pilgrimage programme; departure dates are confirmed separately. Temple visits, Aarti attendance and sightseeing depend on local timings, traffic, weather and access. The organiser may change the programme due to natural events, traffic, weather or other unavoidable circumstances, and travellers are requested to cooperate and report on time. Local vehicles, sightseeing tickets, boating, ropeways, jeep safaris and personal expenses are extra. Confirm the Day 1 evening temple stop and final return time before booking. Gallery images are existing AI-generated destination illustrations, not photographs of the booked accommodation or guaranteed views.",
+      "The route follows the supplied Shravan pilgrimage programme; departure dates are confirmed separately. Temple visits, Aarti attendance and sightseeing depend on local timings, traffic, weather and access. The organiser may change the programme due to natural events, traffic, weather or other unavoidable circumstances, and travellers are requested to cooperate and report on time. Local vehicles, sightseeing tickets, boating, ropeways, jeep safaris and personal expenses are extra. Confirm the Day 1 evening temple stop and final return time before booking. Images are for reference only. Actual hotels and views may vary.",
     itinerary: [
       [
         "Ahmedabad departure and onward to Nashik",
@@ -1308,7 +1308,7 @@ export const tourPackages = [
     accommodationNotes:
       "The 15 itinerary days list overnight stays in Ujjain on Day 1, Ayodhya on Days 3 and 4, Kolkata on Days 6 and 7, Bhubaneswar on Day 9, Amarkantak on Day 11 and Omkareshwar on Day 13. Nights after Days 2, 5, 8, 10, 12 and 14 are spent travelling. There is also an overnight departure before Day 1. The programme does not mean 14 hotel nights. Hotel names, category, AC facilities and room-sharing arrangements are not specified in the poster and require confirmation.",
     importantInformation:
-      "The programme starts with an overnight departure before its 15 numbered itinerary days; confirm the full elapsed journey time and final arrival before arranging onward travel. Day 6 requires clarification: its heading names Baidyanath in Jharkhand, while the body text names Parli Vaijnath. The exact temple location is not yet confirmed. Days 12 and 13 both cover the onward journey towards Omkareshwar and have been retained as separate days. Confirm vehicle type, accommodation, Gangasagar boat arrangements and any separate ticket charges before booking. Temple access, Aarti timings, boat operations and sightseeing depend on weather and local conditions. Gallery images are AI-generated destination illustrations, not photographs of booked accommodation or guaranteed views.",
+      "The programme starts with an overnight departure before its 15 numbered itinerary days; confirm the full elapsed journey time and final arrival before arranging onward travel. Day 6 requires clarification: its heading names Baidyanath in Jharkhand, while the body text names Parli Vaijnath. The exact temple location is not yet confirmed. Days 12 and 13 both cover the onward journey towards Omkareshwar and have been retained as separate days. Confirm vehicle type, accommodation, Gangasagar boat arrangements and any separate ticket charges before booking. Temple access, Aarti timings, boat operations and sightseeing depend on weather and local conditions. Images are for reference only. Actual hotels and views may vary.",
     itinerary: [
       [
         "Ujjain, Harsiddhi Mata and Mahakaleshwar",
@@ -1413,7 +1413,7 @@ export const tourPackages = [
     accommodationNotes:
       "AC rooms are included at the listed hotel stops: Nashik on Day 2; Shirdi on Days 3 and 4; Ellora on Day 5; Hyderabad on Day 7; Tirupati on Days 9 and 10; Mahabalipuram on Days 11 and 12; Kanyakumari on Days 14 and 15; Mysore on Days 17 and 18; and Pandharpur on Day 20. Other listed nights are spent on the bus, including the additional return journey after Day 22. The package does not promise 21 hotel nights. Hotel names, room-sharing arrangements, facilities and the final overnight plan are confirmed before booking.",
     importantInformation:
-      "Duration is 22 tour days plus a separate return journey, as confirmed by the organiser. The source programme has 23 dated rows; the final row is the return through Saputara, Jogeshwar and Dakor to Ahmedabad, not an additional sightseeing day within the 22-day tour. Allow for the extra overnight bus journey after Day 22 and confirm the full elapsed travel time before arranging onward travel. The Trivandrum/Kerala excursion is self-paid. Gujarati meals and AC rooms are listed, but specific meal counts and room sharing are not supplied. Confirm darshan bookings, entry tickets, any local transfers and the final schedule before payment. Sightseeing and temple visits depend on travel time, access and local conditions. Gallery images are AI-generated destination illustrations, not photographs of booked hotels or guaranteed views.",
+      "Duration is 22 tour days plus a separate return journey, as confirmed by the organiser. The source programme has 23 dated rows; the final row is the return through Saputara, Jogeshwar and Dakor to Ahmedabad, not an additional sightseeing day within the 22-day tour. Allow for the extra overnight bus journey after Day 22 and confirm the full elapsed travel time before arranging onward travel. The Trivandrum/Kerala excursion is self-paid. Gujarati meals and AC rooms are listed, but specific meal counts and room sharing are not supplied. Confirm darshan bookings, entry tickets, any local transfers and the final schedule before payment. Sightseeing and temple visits depend on travel time, access and local conditions. Images are for reference only. Actual hotels and views may vary.",
     itinerary: [
       [
         "Ahmedabad, Jogeshwar and Saputara towards Nashik",
@@ -1612,7 +1612,7 @@ export const tourPackages = [
     accommodationNotes:
       "Four nights on a double-sharing basis: the first three nights in Pattaya at Golden Beach Hotel Pattaya or similar, listed as a 3-star property in the poster; the fourth night in Bangkok at Princeton Hotel or similar, listed as a 4-star property. Both stays are on a bed-and-breakfast basis. Confirm the final hotels, room type, check-in arrangements and availability before payment. Gallery images depict destinations and do not represent the booked hotels.",
     importantInformation:
-      "The displayed fare is INR 49,999 per person with flights and double sharing. The departure city for the flight, airline, baggage allowance and final flight itinerary remain to be confirmed; Bangkok DMK is the ground-tour arrival and departure point. Breakfast is included at the hotels, and the Coral Island day includes lunch at an Indian restaurant in Pattaya. Other lunches and dinners are not listed as included. The main coach is private for the group, but the Coral Island speedboat excursion is shared. Reference activity start times are approximately 10:00 AM for the listed tours and 7:30 PM for the Alcazar Show, subject to the confirmed local schedule. Boat operations, sightseeing order and attraction visits depend on weather, access and availability. Travel dates and all final arrangements are confirmed before booking. Gallery images are AI-generated destination illustrations, not photographs of booked hotels or guaranteed views.",
+      "The displayed fare is INR 49,999 per person with flights and double sharing. The departure city for the flight, airline, baggage allowance and final flight itinerary remain to be confirmed; Bangkok DMK is the ground-tour arrival and departure point. Breakfast is included at the hotels, and the Coral Island day includes lunch at an Indian restaurant in Pattaya. Other lunches and dinners are not listed as included. The main coach is private for the group, but the Coral Island speedboat excursion is shared. Reference activity start times are approximately 10:00 AM for the listed tours and 7:30 PM for the Alcazar Show, subject to the confirmed local schedule. Boat operations, sightseeing order and attraction visits depend on weather, access and availability. Travel dates and all final arrangements are confirmed before booking. Images are for reference only. Actual hotels and views may vary.",
     cancellationRules:
       "The Koh Larn Coral Island speedboat excursion with its shared transfer-and-ticket arrangement is marked non-refundable in the supplied programme. Cancellation and change terms for flights, hotels, other activities and the remainder of the package are confirmed in writing before payment.",
     itinerary: [
@@ -1656,57 +1656,57 @@ export const tourPackageMedia = {
   "thailand-pattaya-bangkok": [
     {
       image: "thailand-pattaya-bay.webp",
-      altText: "AI-generated illustration of Pattaya's crescent bay from an elevated viewpoint",
-      caption: "Pattaya View Point - AI-generated destination illustration",
+      altText: "Pattaya's crescent bay from an elevated viewpoint",
+      caption: "Pattaya View Point",
     },
     {
       image: "thailand-koh-larn-coral-island.webp",
-      altText: "AI-generated illustration of a sandy Koh Larn beach and clear turquoise water",
-      caption: "Koh Larn Coral Island - AI-generated destination illustration",
+      altText: "A sandy Koh Larn beach and clear turquoise water",
+      caption: "Koh Larn Coral Island",
     },
     {
       image: "thailand-pattaya-big-buddha.webp",
-      altText: "AI-generated illustration of Pattaya's golden Big Buddha and temple approach",
-      caption: "Pattaya Big Buddha - AI-generated destination illustration",
+      altText: "Pattaya's golden Big Buddha and temple approach",
+      caption: "Pattaya Big Buddha",
     },
     {
       image: "thailand-bangkok-golden-buddha.webp",
-      altText: "AI-generated illustration of a Golden Buddha in a decorated Bangkok temple hall",
-      caption: "Bangkok Golden Buddha temple setting - AI-generated illustration",
+      altText: "A Golden Buddha in a decorated Bangkok temple hall",
+      caption: "Bangkok Golden Buddha temple setting",
     },
   ],
   "south-india-rameswaram-ooty-mysore-tirupati": [
     {
       image: "south-india-rameswaram.webp",
-      altText: "AI-generated illustration of the Ramanathaswamy Temple exterior in Rameswaram",
-      caption: "Rameswaram pilgrimage setting - AI-generated illustration",
+      altText: "The Ramanathaswamy Temple exterior in Rameswaram",
+      caption: "Rameswaram pilgrimage setting",
     },
     {
       image: "south-india-ooty.webp",
-      altText: "AI-generated illustration of tea-growing hills and morning mist near Ooty",
-      caption: "Ooty and the Nilgiri hills - AI-generated illustration",
+      altText: "Tea-growing hills and morning mist near Ooty",
+      caption: "Ooty and the Nilgiri hills",
     },
     {
       image: "south-india-mysore-palace.webp",
-      altText: "AI-generated illustration of Mysore Palace and its landscaped forecourt",
-      caption: "Mysore Palace - AI-generated illustration",
+      altText: "Mysore Palace and its landscaped forecourt",
+      caption: "Mysore Palace",
     },
     {
       image: "south-india-tirupati.webp",
-      altText: "AI-generated illustration of a temple gateway and forested hills at Tirumala",
-      caption: "Tirupati Balaji pilgrimage setting - AI-generated illustration",
+      altText: "A temple gateway and forested hills at Tirumala",
+      caption: "Tirupati Balaji pilgrimage setting",
     },
   ],
   "east-india-pilgrimage-tour": [
     {
       image: "east-india-puri-jagannath.webp",
-      altText: "AI-generated illustration of Jagannath Temple's exterior in Puri",
-      caption: "Jagannath Puri - AI-generated destination illustration",
+      altText: "Jagannath Temple's exterior in Puri",
+      caption: "Jagannath Puri",
     },
     {
       image: "east-india-kolkata-howrah.webp",
-      altText: "AI-generated illustration of Howrah Bridge spanning the river in Kolkata",
-      caption: "Howrah Bridge, Kolkata - AI-generated destination illustration",
+      altText: "Howrah Bridge spanning the river in Kolkata",
+      caption: "Howrah Bridge, Kolkata",
     },
     {
       image: "north-india-nepal-ayodhya.webp",
@@ -1776,23 +1776,23 @@ export const tourPackageMedia = {
   "gangtok-lachung-darjeeling": [
     {
       image: "sikkim-gangtok.webp",
-      altText: "AI-generated illustration of Gangtok's hillside town and Himalayan landscape",
-      caption: "Gangtok's Himalayan setting - AI-generated illustration",
+      altText: "Gangtok's hillside town and Himalayan landscape",
+      caption: "Gangtok's Himalayan setting",
     },
     {
       image: "sikkim-tsomgo-lake.webp",
-      altText: "AI-generated illustration of Tsomgo Lake surrounded by snowy mountain slopes",
-      caption: "Tsomgo Lake - AI-generated illustration",
+      altText: "Tsomgo Lake surrounded by snowy mountain slopes",
+      caption: "Tsomgo Lake",
     },
     {
       image: "sikkim-yumthang-valley.webp",
-      altText: "AI-generated illustration of a river and spring flowers in Yumthang Valley",
-      caption: "Yumthang Valley near Lachung - AI-generated illustration",
+      altText: "A river and spring flowers in Yumthang Valley",
+      caption: "Yumthang Valley near Lachung",
     },
     {
       image: "darjeeling-heritage-toy-train.webp",
-      altText: "AI-generated illustration of a blue heritage Toy Train in Darjeeling's hills",
-      caption: "Darjeeling's heritage Toy Train - AI-generated illustration",
+      altText: "A blue heritage Toy Train in Darjeeling's hills",
+      caption: "Darjeeling's heritage Toy Train",
     },
   ],
   "diwali-jaisalmer-sam-desert-tanot-longewala": [
