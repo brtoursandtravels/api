@@ -42,7 +42,7 @@ const changePasswordSchema = z
     newPassword: passwordSchema,
   })
   .strict();
-const dummyPasswordHash = argon2.hash(randomToken(), { type: argon2.argon2id });
+let dummyPasswordHash: Promise<string> | undefined;
 
 function publicUser(user: NonNullable<Express.Request["auth"]>["user"]) {
   return {
@@ -65,7 +65,11 @@ authRouter.get("/csrf", (request, response) => {
     ? createSessionCsrfToken(request.auth.sessionId)
     : createPreAuthCsrfToken();
   response.json({
-    data: { csrfToken: token, authenticated: Boolean(request.auth) },
+    data: {
+      csrfToken: token,
+      authenticated: Boolean(request.auth),
+      user: request.auth ? publicUser(request.auth.user) : null,
+    },
   });
 });
 
@@ -85,7 +89,9 @@ authRouter.post(
     const user = await prisma.adminUser.findUnique({
       where: { email: input.email },
     });
-    const passwordHash = user?.passwordHash ?? (await dummyPasswordHash);
+    const passwordHash = user?.passwordHash ?? (await (
+      dummyPasswordHash ??= argon2.hash(randomToken(), { type: argon2.argon2id })
+    ));
     const validPassword = await argon2
       .verify(passwordHash, input.password)
       .catch(() => false);

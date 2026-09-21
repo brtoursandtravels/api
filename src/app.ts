@@ -120,6 +120,10 @@ app.use("/api/v1/auth", authRouter);
 app.use("/api/v1", publicContentRouter);
 app.use("/api/v1/packages", packageRouter);
 app.use("/api/v1/inquiries", inquiriesRouter);
+app.use("/api/v1/admin", (_request, response, next) => {
+  response.setHeader("Cache-Control", "private, no-store");
+  next();
+});
 app.use("/api/v1/admin", adminOperationsRouter);
 app.use("/api/v1/admin", adminCatalogueRouter);
 app.use("/api/v1/admin", adminContentRouter);

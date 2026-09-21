@@ -185,11 +185,18 @@ paths:
             description: Identical idempotent retry returned the original receipt,
           }
         "409": { $ref: "#/components/responses/Error" }
+  /package-options:
+    get:
+      tags: [Packages]
+      summary: Get up to 500 published package labels for selectors
+      responses:
+        "200":
+          description: Published non-demo package slugs and titles; no media or itinerary
   /auth/csrf:
     get:
       tags: [Authentication]
-      summary: Get a pre-auth or session-bound CSRF token
-      responses: { "200": { description: Non-cacheable CSRF token } }
+      summary: Get a pre-auth or session-bound CSRF token and current user
+      responses: { "200": { description: "Non-cacheable CSRF token, authenticated flag, and safe user profile (null when signed out)" } }
   /auth/login:
     post:
       tags: [Authentication]

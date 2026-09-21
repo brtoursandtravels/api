@@ -217,6 +217,7 @@ model Package {
   @@index([days])
   @@index([startingCity])
   @@index([brochureMediaId])
+  @@index([updatedAt, id])
 }
 
 model PackageDestination {
@@ -298,6 +299,7 @@ model MediaAsset {
   packageBrochures Package[]           @relation("PackageBrochure")
 
   @@index([visibility, createdAt])
+  @@index([createdAt])
 }
 
 model PackageMedia {
@@ -328,6 +330,7 @@ model GalleryAlbum {
 
   @@index([status, publishedAt, isDemo])
   @@index([destinationId])
+  @@index([updatedAt])
 }
 
 model GalleryAlbumImage {
@@ -384,6 +387,7 @@ model BlogPost {
   @@index([status, publishedAt, isDemo])
   @@index([categoryId, publishedAt])
   @@index([authorId])
+  @@index([updatedAt])
 }
 
 model BlogPostRelated {
@@ -565,6 +569,7 @@ model Enquiry {
   notifications        NotificationOutbox[]
 
   @@index([status, createdAt])
+  @@index([createdAt])
   @@index([assignedToId, status])
   @@index([packageId, createdAt])
   @@index([email])
@@ -623,6 +628,7 @@ model NotificationOutbox {
   enquiry       Enquiry?           @relation(fields: [enquiryId], references: [id], onDelete: SetNull)
 
   @@index([status, nextAttemptAt])
+  @@index([createdAt])
   @@index([enquiryId])
 }
 

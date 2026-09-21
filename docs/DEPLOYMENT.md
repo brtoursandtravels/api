@@ -76,6 +76,45 @@ Production starts therefore skip demo enquiries and other broad sample data. The
 explicitly labelled sample review cards; replace them with consented customer
 reviews and archive the samples before launch sign-off.
 
+## Dashboard performance rollout
+
+Deploy the API and admin together. The dashboard runs six independent reads
+without a transaction, combines status counts, and aggregates the fourteen-day
+UTC enquiry trend in MySQL. `20260921070000_enquiry_trend_index` indexes that date
+range; the existing `vercel-build` workflow applies the migration. Session
+validation is reused within a request only, and `/auth/csrf` includes the safe
+user profile to remove the extra `/auth/me` round trip on reload. Dashboard
+responses remain private and are not stored in shared caches.
+
+The API's `vercel.json` pins its function to Mumbai (`bom1`) near the current
+Mumbai-hosted MySQL database. Revisit this setting if the database moves; leaving
+the function in the default US region adds cross-continent latency to every
+database round trip.
+
+Run `npm run test:dashboard` for summary, session, CSRF and revocation checks.
+The admin Vercel config also maps the logo and favicon before its SPA fallback.
+
+## Catalogue and admin read performance
+
+Apply `20260921100000_admin_list_indexes` through the normal deployment build.
+Deploy the API before the admin and public website: the admin uses the optional
+`view=summary` package list, and gallery uses the new `/api/v1/package-options`
+labels endpoint. Older full package list clients remain supported.
+
+Public package cards fetch one public image and upcoming departure prices, with
+no itinerary. Details still include the full public gallery and itinerary. Price
+filters first rank lightweight price records and load relations only for the
+requested page. Blog, gallery and supporting public queries select only DTO
+fields; gallery package filters use a relation predicate without a preliminary
+lookup. All admin list and pre-save validation reads run without transactions;
+multi-record writes retain their transactions. Admin responses use private,
+no-store caching. Existing public CDN cache policies remain unchanged.
+
+The public website also pins rendering to `bom1`, and shares API results between
+metadata, layouts and page content within each render. Editors load media/tag
+selectors when opened. The API tests cover payloads, pagination, prices,
+publication rules and authenticated reads (`test:public-read`, `test:admin-read`).
+
 ## Activity log rollout
 
 Apply `20260919090000_activity_log_details` before serving the updated API.

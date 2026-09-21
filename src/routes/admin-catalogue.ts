@@ -263,21 +263,21 @@ async function verifyRelations(
   brochureMediaId?: string | null,
 ) {
   const [destinationCount, categoryCount, mediaCount, brochureCount] =
-    await prisma.$transaction([
-      prisma.destination.count({
+    await Promise.all([
+      destinationIds.length ? prisma.destination.count({
         where: { id: { in: destinationIds }, status: { not: "ARCHIVED" } },
-      }),
-      prisma.category.count({
+      }) : 0,
+      categoryIds.length ? prisma.category.count({
         where: { id: { in: categoryIds }, status: { not: "ARCHIVED" } },
-      }),
-      prisma.mediaAsset.count({
+      }) : 0,
+      mediaIds.length ? prisma.mediaAsset.count({
         where: { id: { in: mediaIds }, mimeType: { startsWith: "image/" } },
-      }),
+      }) : 0,
       brochureMediaId
         ? prisma.mediaAsset.count({
             where: { id: brochureMediaId, mimeType: "application/pdf" },
           })
-        : prisma.mediaAsset.count({ where: { id: "__none__" } }),
+        : 0,
     ]);
   if (destinationCount !== new Set(destinationIds).size) {
     throw new HttpError(
@@ -361,6 +361,7 @@ adminCatalogueRouter.get("/packages", async (request, response) => {
       status: z.enum(["DRAFT", "PUBLISHED", "ARCHIVED"]).optional(),
       page: z.coerce.number().int().min(1).max(10_000).default(1),
       pageSize: z.coerce.number().int().min(1).max(100).default(25),
+      view: z.enum(["full", "summary"]).default("full"),
     })
     .parse(request.query);
   const where: Prisma.PackageWhereInput = {
@@ -374,7 +375,24 @@ adminCatalogueRouter.get("/packages", async (request, response) => {
         }
       : {}),
   };
-  const [total, records] = await prisma.$transaction([
+  if (query.view === "summary") {
+    const [total, records] = await Promise.all([
+      prisma.package.count({ where }),
+      prisma.package.findMany({
+        where,
+        select: {
+          id: true, slug: true, title: true, status: true, days: true, nights: true,
+          basePrice: true, currency: true, priceBasis: true, isDemo: true, updatedAt: true,
+        },
+        orderBy: [{ updatedAt: "desc" }, { id: "desc" }],
+        skip: (query.page - 1) * query.pageSize,
+        take: query.pageSize,
+      }),
+    ]);
+    response.json({ data: records.map((record) => ({ ...record, basePrice: record.basePrice?.toFixed(2) ?? null })), meta: { ...query, total } });
+    return;
+  }
+  const [total, records] = await Promise.all([
     prisma.package.count({ where }),
     prisma.package.findMany({
       where,

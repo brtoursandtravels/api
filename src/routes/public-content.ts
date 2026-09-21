@@ -5,6 +5,7 @@ import { env } from "../env.js";
 import type { Prisma } from "../generated/prisma/client.js";
 import { HttpError } from "../lib/http-error.js";
 import { publicMediaUrl } from "../lib/media-url.js";
+import { publicMediaSelect } from "../lib/public-media.js";
 import { readingMinutes, sanitizeRichText } from "../lib/rich-text.js";
 import { publicEditableContentCache, publicReadCache } from "../middleware/public-cache.js";
 
@@ -54,6 +55,7 @@ export const publicContentRouter = Router();
 publicContentRouter.get("/site", publicEditableContentCache, async (_request, response) => {
   const settings = await prisma.setting.findMany({
     where: { isPublic: true },
+    select: { key: true, value: true },
     orderBy: { key: "asc" },
   });
   response.json({
@@ -71,6 +73,7 @@ publicContentRouter.get("/home", publicReadCache, async (_request, response) => 
   const now = new Date();
   const sections = await prisma.homepageSection.findMany({
     where: { ...published(now), isVisible: true },
+    select: { id: true, type: true, title: true, content: true, sortOrder: true, isDemo: true },
     orderBy: { sortOrder: "asc" },
   });
   response.json({
@@ -120,7 +123,10 @@ publicContentRouter.get("/pages/:slug", publicEditableContentCache, async (reque
 publicContentRouter.get("/destinations", publicReadCache, async (_request, response) => {
   const records = await prisma.destination.findMany({
     where: published(new Date()),
-    include: { coverMedia: true },
+    select: {
+      id: true, slug: true, name: true, summary: true, isDemo: true,
+      coverMedia: { select: publicMediaSelect },
+    },
     orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
   });
   response.json({
@@ -141,6 +147,7 @@ publicContentRouter.get("/destinations", publicReadCache, async (_request, respo
 publicContentRouter.get("/categories", publicReadCache, async (_request, response) => {
   const records = await prisma.category.findMany({
     where: published(new Date()),
+    select: { id: true, slug: true, name: true, description: true, isDemo: true },
     orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
   });
   response.json({
@@ -154,41 +161,40 @@ publicContentRouter.get("/categories", publicReadCache, async (_request, respons
   });
 });
 
+publicContentRouter.get("/package-options", publicReadCache, async (_request, response) => {
+  const records = await prisma.package.findMany({
+    where: published(new Date()),
+    select: { slug: true, title: true },
+    orderBy: [{ title: "asc" }, { id: "asc" }],
+    take: 500,
+  });
+  response.json({ data: records });
+});
+
 publicContentRouter.get("/gallery/albums", publicReadCache, async (request, response) => {
   const query = pageQuerySchema.parse(request.query);
-  const packageDestinations = query.package
-    ? await prisma.package.findFirst({
-        where: { slug: query.package, ...published(new Date()) },
-        select: {
-          destinations: { select: { destinationId: true } },
-        },
-      })
-    : null;
+  const now = new Date();
   const where: Prisma.GalleryAlbumWhereInput = {
-    ...published(new Date()),
-    ...(query.destination ? { destination: { slug: query.destination } } : {}),
-    ...(query.package
-      ? {
-          destinationId: {
-            in:
-              packageDestinations?.destinations.map(
-                (item) => item.destinationId,
-              ) ?? [],
-          },
-        }
-      : {}),
+    ...published(now),
+    ...(query.destination || query.package ? {
+      destination: {
+        ...(query.destination ? { slug: query.destination } : {}),
+        ...(query.package ? { packages: { some: { package: { slug: query.package, ...published(now) } } } } : {}),
+      },
+    } : {}),
   };
   const [total, records] = await Promise.all([
     prisma.galleryAlbum.count({ where }),
     prisma.galleryAlbum.findMany({
       where,
-      include: {
+      select: {
+        id: true, slug: true, title: true, description: true, isDemo: true,
         destination: { select: { slug: true, name: true } },
         images: {
           where: { mediaAsset: { visibility: "PUBLIC" } },
           orderBy: { sortOrder: "asc" },
           ...(query.includeImages ? {} : { take: 1 }),
-          include: { mediaAsset: true },
+          select: { mediaAsset: { select: publicMediaSelect } },
         },
       },
       orderBy: { publishedAt: "desc" },
@@ -217,12 +223,13 @@ publicContentRouter.get("/gallery/albums/:slug", publicReadCache, async (request
   const slug = z.string().min(1).max(180).parse(request.params.slug);
   const record = await prisma.galleryAlbum.findFirst({
     where: { slug, ...published(new Date()) },
-    include: {
+    select: {
+      id: true, slug: true, title: true, description: true, isDemo: true,
       destination: { select: { slug: true, name: true } },
       images: {
         where: { mediaAsset: { visibility: "PUBLIC" } },
         orderBy: { sortOrder: "asc" },
-        include: { mediaAsset: true },
+        select: { mediaAsset: { select: publicMediaSelect } },
       },
     },
   });
@@ -248,6 +255,7 @@ publicContentRouter.get("/gallery/albums/:slug", publicReadCache, async (request
 publicContentRouter.get("/blog/categories", publicReadCache, async (_request, response) => {
   const records = await prisma.blogCategory.findMany({
     where: published(new Date()),
+    select: { id: true, slug: true, name: true, isDemo: true },
     orderBy: { name: "asc" },
   });
   response.json({
@@ -279,9 +287,11 @@ publicContentRouter.get("/blog", publicReadCache, async (request, response) => {
     prisma.blogPost.count({ where }),
     prisma.blogPost.findMany({
       where,
-      include: {
+      select: {
+        id: true, slug: true, title: true, excerpt: true, contentHtml: true,
+        publishedAt: true, publicAuthorName: true, isDemo: true,
         category: { select: { slug: true, name: true } },
-        coverMedia: true,
+        coverMedia: { select: publicMediaSelect },
         relatedTours: {
           where: { package: { is: published(now) } },
           take: 1,
@@ -325,24 +335,27 @@ publicContentRouter.get("/blog/:slug", publicEditableContentCache, async (reques
   const now = new Date();
   const record = await prisma.blogPost.findFirst({
     where: { slug, ...published(now) },
-    include: {
+    select: {
+      id: true, slug: true, title: true, excerpt: true, contentHtml: true, publishedAt: true,
+      publicAuthorName: true, publicAuthorBio: true, seoTitle: true, seoDescription: true, isDemo: true,
       category: { select: { slug: true, name: true } },
-      coverMedia: true,
-      tags: { include: { tag: { select: { slug: true, name: true } } } },
+      coverMedia: { select: publicMediaSelect },
+      tags: { select: { tag: { select: { slug: true, name: true } } } },
       relatedArticles: {
         where: { relatedPost: { is: published(now) } },
-        include: {
+        select: {
           relatedPost: {
-            include: {
+            select: {
+              id: true, slug: true, title: true, excerpt: true, publishedAt: true,
               category: { select: { slug: true, name: true } },
-              coverMedia: true,
+              coverMedia: { select: publicMediaSelect },
             },
           },
         },
       },
       relatedTours: {
         where: { package: { is: published(now) } },
-        include: {
+        select: {
           package: {
             select: {
               id: true,
@@ -410,6 +423,7 @@ publicContentRouter.get("/faqs", publicReadCache, async (request, response) => {
     .optional()
     .parse(request.query.package);
   const records = await prisma.faq.findMany({
+    select: { id: true, question: true, answer: true, sortOrder: true, isDemo: true },
     where: {
       ...published(new Date()),
       ...(packageSlug
@@ -438,6 +452,7 @@ const publishedSampleTestimonialIds = [
 publicContentRouter.get("/testimonials", publicReadCache, async (_request, response) => {
   const now = new Date();
   const records = await prisma.testimonial.findMany({
+    select: { id: true, publicName: true, location: true, tripName: true, quote: true, rating: true, sortOrder: true, isDemo: true },
     where: {
       status: "PUBLISHED",
       publishedAt: { not: null, lte: now },

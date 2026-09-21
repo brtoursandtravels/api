@@ -1,55 +1,57 @@
 import type { PackageCard, PackageDetail } from "../contracts.js";
-import type {
-  Category,
-  Departure,
-  Destination,
-  ItineraryDay,
-  MediaAsset,
-  Package,
-  PackageCategory,
-  PackageDestination,
-  PackageMedia,
-  Prisma,
-} from "../generated/prisma/client.js";
-import type { PackageInclude } from "../generated/prisma/models/Package.js";
+import type { Prisma } from "../generated/prisma/client.js";
 import { publicMediaUrl } from "./media-url.js";
+import { publicMediaSelect } from "./public-media.js";
 
-export const publicPackageCardInclude = {
-  destinations: {
-    orderBy: { sortOrder: "asc" },
-    include: { destination: true },
-  },
-  categories: { include: { category: true } },
-  itineraryDays: { orderBy: { dayNumber: "asc" } },
-  departures: { orderBy: { startDate: "asc" } },
-  media: {
-    where: {
-      mediaAsset: { visibility: "PUBLIC", mimeType: { startsWith: "image/" } },
+const packageImageSelection = {
+  where: { mediaAsset: { visibility: "PUBLIC", mimeType: { startsWith: "image/" } } },
+  orderBy: { sortOrder: "asc" },
+  select: { mediaAsset: { select: publicMediaSelect } },
+} satisfies Prisma.Package$mediaArgs;
+
+export function publicPackageCardSelect(now: Date) {
+  return {
+    id: true, slug: true, title: true, summary: true, days: true, nights: true,
+    startingCity: true, basePrice: true, currency: true, priceBasis: true,
+    highlights: true, isDemo: true,
+    destinations: {
+      orderBy: { sortOrder: "asc" },
+      select: { destinationId: true, destination: { select: { slug: true, name: true } } },
     },
-    orderBy: { sortOrder: "asc" },
-    include: { mediaAsset: true },
-  },
-} satisfies PackageInclude;
+    categories: { select: { categoryId: true, category: { select: { slug: true, name: true } } } },
+    departures: {
+      where: { status: "SCHEDULED", startDate: { gte: now } },
+      select: { status: true, startDate: true, pricePerPerson: true },
+    },
+    // List cards need one cover and no itinerary or long-form detail fields.
+    media: { ...packageImageSelection, take: 1 },
+  } satisfies Prisma.PackageSelect;
+}
 
-export const publicPackageDetailInclude = {
-  ...publicPackageCardInclude,
-  itineraryDays: { orderBy: { dayNumber: "asc" } },
-  brochureMedia: true,
-} satisfies PackageInclude;
+export function publicPackageDetailSelect(now: Date) {
+  return {
+    ...publicPackageCardSelect(now),
+    overview: true, inclusions: true, exclusions: true, importantInformation: true,
+    transportInformation: true, accommodationNotes: true, cancellationRules: true,
+    seoTitle: true, seoDescription: true,
+    itineraryDays: {
+      orderBy: { dayNumber: "asc" },
+      select: { dayNumber: true, title: true, description: true },
+    },
+    departures: {
+      where: { status: "SCHEDULED", startDate: { gte: now } },
+      orderBy: { startDate: "asc" },
+      select: { id: true, status: true, startDate: true, endDate: true, pricePerPerson: true, currency: true },
+    },
+    media: packageImageSelection,
+    brochureMedia: { select: { id: true, storageKey: true, originalName: true, mimeType: true, visibility: true } },
+  } satisfies Prisma.PackageSelect;
+}
 
-export type PublicPackageCardRecord = Package & {
-  destinations: Array<PackageDestination & { destination: Destination }>;
-  categories: Array<PackageCategory & { category: Category }>;
-  departures: Departure[];
-  media: Array<PackageMedia & { mediaAsset: MediaAsset }>;
-};
+export type PublicPackageCardRecord = Prisma.PackageGetPayload<{ select: ReturnType<typeof publicPackageCardSelect> }>;
+export type PublicPackageRecord = Prisma.PackageGetPayload<{ select: ReturnType<typeof publicPackageDetailSelect> }>;
 
-export type PublicPackageRecord = PublicPackageCardRecord & {
-  itineraryDays: ItineraryDay[];
-  brochureMedia: MediaAsset | null;
-};
-
-function publicMedia(asset: MediaAsset) {
+function publicMedia(asset: Prisma.MediaAssetGetPayload<{ select: typeof publicMediaSelect }>) {
   return {
     id: asset.id,
     url: publicMediaUrl(asset),
@@ -66,8 +68,8 @@ function jsonStrings(value: Prisma.JsonValue): string[] {
     : [];
 }
 
-function startingPrice(
-  record: PublicPackageCardRecord,
+export function startingPrice(
+  record: Pick<PublicPackageCardRecord, "priceBasis" | "basePrice" | "currency" | "departures">,
   now: Date,
 ): PackageCard["startingPrice"] {
   if (record.priceBasis === "ON_REQUEST") return null;
@@ -76,10 +78,10 @@ function startingPrice(
     record.basePrice,
     ...record.departures
       .filter(
-        (departure: Departure) =>
+        (departure) =>
           departure.status === "SCHEDULED" && departure.startDate >= now,
       )
-      .map((departure: Departure) => departure.pricePerPerson),
+      .map((departure) => departure.pricePerPerson),
   ].filter((amount) => amount !== null);
 
   if (amounts.length === 0) return null;
@@ -106,13 +108,13 @@ export function toPackageCard(
     nights: record.nights,
     startingCity: record.startingCity,
     destinations: record.destinations.map(
-      ({ destination }: PackageDestination & { destination: Destination }) => ({
+      ({ destination }) => ({
         slug: destination.slug,
         name: destination.name,
       }),
     ),
     categories: record.categories.map(
-      ({ category }: PackageCategory & { category: Category }) => ({
+      ({ category }) => ({
         slug: category.slug,
         name: category.name,
       }),
@@ -149,17 +151,17 @@ export function toPackageDetail(
           }
         : null,
     media: record.media.map((item) => publicMedia(item.mediaAsset)),
-    itinerary: record.itineraryDays.map((day: ItineraryDay) => ({
+    itinerary: record.itineraryDays.map((day) => ({
       dayNumber: day.dayNumber,
       title: day.title,
       description: day.description,
     })),
     departures: record.departures
       .filter(
-        (departure: Departure) =>
+        (departure) =>
           departure.status === "SCHEDULED" && departure.startDate >= now,
       )
-      .map((departure: Departure) => ({
+      .map((departure) => ({
         id: departure.id,
         startDate: departure.startDate.toISOString().slice(0, 10),
         endDate: departure.endDate.toISOString().slice(0, 10),

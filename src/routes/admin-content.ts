@@ -304,22 +304,22 @@ async function verifyBlogRelations(
       "RELATED_POST_INVALID",
       "An article cannot relate to itself.",
     );
-  const [categories, media, tags, packages, posts] = await prisma.$transaction([
+  const [categories, media, tags, packages, posts] = await Promise.all([
     input.categoryId
       ? prisma.blogCategory.count({
           where: { id: input.categoryId, status: { not: "ARCHIVED" } },
         })
-      : prisma.blogCategory.count({ where: { id: "__none__" } }),
+      : 0,
     input.coverMediaId
       ? prisma.mediaAsset.count({
           where: { id: input.coverMediaId, mimeType: { startsWith: "image/" } },
         })
-      : prisma.mediaAsset.count({ where: { id: "__none__" } }),
-    prisma.tag.count({ where: { id: { in: input.tagIds } } }),
-    prisma.package.count({ where: { id: { in: input.relatedPackageIds } } }),
-    prisma.blogPost.count({
+      : 0,
+    input.tagIds.length ? prisma.tag.count({ where: { id: { in: input.tagIds } } }) : 0,
+    input.relatedPackageIds.length ? prisma.package.count({ where: { id: { in: input.relatedPackageIds } } }) : 0,
+    input.relatedPostIds.length ? prisma.blogPost.count({
       where: { id: { in: input.relatedPostIds }, status: { not: "ARCHIVED" } },
-    }),
+    }) : 0,
   ]);
   if (input.categoryId && categories !== 1)
     throw new HttpError(

@@ -16,72 +16,80 @@ export const adminOperationsRouter = Router();
 adminOperationsRouter.use(optionalSession, requireAuth);
 
 adminOperationsRouter.get("/dashboard", async (_request, response) => {
-  const trendStart = new Date();
+  response.setHeader("Cache-Control", "private, no-store");
+  const now = new Date();
+  const trendStart = new Date(now);
   trendStart.setUTCHours(0, 0, 0, 0);
+  const trendEnd = new Date(trendStart);
+  trendEnd.setUTCDate(trendEnd.getUTCDate() + 1);
   trendStart.setUTCDate(trendStart.getUTCDate() - 13);
+  // These independent summaries do not need a transaction. Group counts by
+  // status instead of serializing a separate database round trip per status.
   const [
-    packages,
-    publishedPackages,
+    packageCounts,
     upcomingDepartures,
-    newEnquiries,
+    enquiryCounts,
     failedNotifications,
-    draftPosts,
-    publishedPosts,
-    contactedEnquiries,
-    quotedEnquiries,
-    confirmedEnquiries,
-    closedEnquiries,
-    lostEnquiries,
-    recentEnquiries,
-  ] = await prisma.$transaction([
-    prisma.package.count({ where: { status: { not: "ARCHIVED" } } }),
-    prisma.package.count({ where: { status: "PUBLISHED" } }),
+    postCounts,
+    dailyEnquiries,
+  ] = await Promise.all([
+    prisma.package.groupBy({
+      by: ["status"],
+      where: { status: { not: "ARCHIVED" } },
+      _count: { _all: true },
+    }),
     prisma.departure.count({
-      where: { status: "SCHEDULED", startDate: { gte: new Date() } },
+      where: { status: "SCHEDULED", startDate: { gte: now } },
     }),
-    prisma.enquiry.count({ where: { status: "NEW" } }),
+    prisma.enquiry.groupBy({
+      by: ["status"],
+      _count: { _all: true },
+    }),
     prisma.notificationOutbox.count({ where: { status: "FAILED" } }),
-    prisma.blogPost.count({ where: { status: "DRAFT" } }),
-    prisma.blogPost.count({
-      where: { status: "PUBLISHED", publishedAt: { lte: new Date() } },
+    prisma.blogPost.groupBy({
+      by: ["status"],
+      where: { OR: [
+        { status: "DRAFT" },
+        { status: "PUBLISHED", publishedAt: { lte: now } },
+      ] },
+      _count: { _all: true },
     }),
-    prisma.enquiry.count({ where: { status: "CONTACTED" } }),
-    prisma.enquiry.count({ where: { status: "QUOTED" } }),
-    prisma.enquiry.count({ where: { status: "CONFIRMED" } }),
-    prisma.enquiry.count({ where: { status: "CLOSED" } }),
-    prisma.enquiry.count({ where: { status: "LOST" } }),
-    prisma.enquiry.findMany({
-      where: { createdAt: { gte: trendStart } },
-      select: { createdAt: true },
-    }),
+    // Aggregate in MySQL so the API receives at most 14 rows, even when there
+    // are many enquiries. DateTime values are stored in UTC.
+    prisma.$queryRaw<Array<{ date: string; count: bigint }>>`
+      SELECT DATE_FORMAT(createdAt, '%Y-%m-%d') AS date, COUNT(*) AS count
+      FROM Enquiry
+      WHERE createdAt >= ${trendStart} AND createdAt < ${trendEnd}
+      GROUP BY DATE_FORMAT(createdAt, '%Y-%m-%d')
+    `,
   ]);
+  const enquiryStatusCounts = { NEW: 0, CONTACTED: 0, QUOTED: 0, CONFIRMED: 0, CLOSED: 0, LOST: 0 };
+  for (const row of enquiryCounts) {
+    enquiryStatusCounts[row.status] = row._count._all;
+  }
+  const packages = packageCounts.reduce((total, row) => total + row._count._all, 0);
+  const publishedPackages = packageCounts.find((row) => row.status === "PUBLISHED")?._count._all ?? 0;
+  const draftPosts = postCounts.find((row) => row.status === "DRAFT")?._count._all ?? 0;
+  const publishedPosts = postCounts.find((row) => row.status === "PUBLISHED")?._count._all ?? 0;
   const trendMap = new Map<string, number>();
   for (let day = 0; day < 14; day += 1) {
     const date = new Date(trendStart);
     date.setUTCDate(date.getUTCDate() + day);
     trendMap.set(date.toISOString().slice(0, 10), 0);
   }
-  for (const enquiry of recentEnquiries) {
-    const key = enquiry.createdAt.toISOString().slice(0, 10);
-    trendMap.set(key, (trendMap.get(key) ?? 0) + 1);
+  for (const row of dailyEnquiries) {
+    if (trendMap.has(row.date)) trendMap.set(row.date, Number(row.count));
   }
   response.json({
     data: {
       packages,
       publishedPackages,
       upcomingDepartures,
-      newEnquiries,
+      newEnquiries: enquiryStatusCounts.NEW,
       failedNotifications,
       draftPosts,
       publishedPosts,
-      enquiryStatusCounts: {
-        NEW: newEnquiries,
-        CONTACTED: contactedEnquiries,
-        QUOTED: quotedEnquiries,
-        CONFIRMED: confirmedEnquiries,
-        CLOSED: closedEnquiries,
-        LOST: lostEnquiries,
-      },
+      enquiryStatusCounts,
       enquiryTrend: Array.from(trendMap, ([date, count]) => ({ date, count })),
       generatedAt: new Date().toISOString(),
     },
@@ -329,7 +337,7 @@ adminOperationsRouter.get(
       })
       .parse(request.query);
     const where = query.status ? { status: query.status } : {};
-    const [total, records] = await prisma.$transaction([
+    const [total, records] = await Promise.all([
       prisma.notificationOutbox.count({ where }),
       prisma.notificationOutbox.findMany({
         where,

@@ -15,6 +15,13 @@ export const optionalSession: RequestHandler = async (
   _response,
   next,
 ) => {
+  // Several admin routers share this middleware within the same request.
+  // Reuse only that request's validated identity; later requests still check
+  // the database so revoked sessions and disabled users take effect immediately.
+  if (request.auth) {
+    next();
+    return;
+  }
   const token = readCookie(request, env.SESSION_COOKIE_NAME);
   if (!token) {
     next();
@@ -23,7 +30,14 @@ export const optionalSession: RequestHandler = async (
 
   const session = await prisma.session.findUnique({
     where: { tokenHash: secretHash(token) },
-    include: { user: true },
+    select: {
+      id: true,
+      expiresAt: true,
+      lastSeenAt: true,
+      user: {
+        select: { id: true, email: true, displayName: true, role: true, status: true },
+      },
+    },
   });
   const now = new Date();
   if (

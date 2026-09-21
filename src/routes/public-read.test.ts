@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { once } from "node:events";
 import { after, afterEach, beforeEach, mock, test } from "node:test";
 import express, { type ErrorRequestHandler } from "express";
+import type { publicPackageCardSelect, publicPackageDetailSelect } from "../lib/packages.js";
 
 // No real database, credentials or external writes are used by these tests.
 Object.assign(process.env, {
@@ -18,6 +19,8 @@ Object.assign(process.env, {
 delete process.env.VERCEL;
 
 const { prisma } = await import("../database.js");
+const { Prisma } = await import("../generated/prisma/client.js");
+const { packageDetailResponseSchema } = await import("../contracts.js");
 const { packageRouter } = await import("./packages.js");
 const { publicContentRouter } = await import("./public-content.js");
 const app = express();
@@ -121,4 +124,134 @@ test("concurrent public page reads never acquire a database transaction", async 
   assert.ok(responses.every((response) => response.status === 200));
   await Promise.all(responses.map((response) => response.json()));
   assert.equal(transactionCalls, 0);
+});
+
+function card(overrides: Record<string, unknown> = {}) {
+  return {
+    id: "tour-1", slug: "test-tour", title: "Test tour", summary: "A published tour",
+    days: 3, nights: 2, startingCity: "Mumbai", basePrice: new Prisma.Decimal(100),
+    currency: "INR", priceBasis: "PER_PERSON", highlights: ["Guide included"], isDemo: false,
+    destinations: [{ destinationId: "destination-1", destination: { slug: "goa", name: "Goa" } }],
+    categories: [], media: [],
+    departures: [{ status: "SCHEDULED", startDate: new Date("2099-01-01"), pricePerPerson: new Prisma.Decimal(80) }],
+    ...overrides,
+  };
+}
+
+test("package cards fetch one public cover, upcoming prices and no itinerary", async () => {
+  stub(prisma.package, "count", async () => 1);
+  stub(prisma.package, "findMany", async ({ select }: { select: ReturnType<typeof publicPackageCardSelect> }) => {
+    assert.equal("overview" in select, false);
+    assert.equal("itineraryDays" in select, false);
+    assert.equal(select.media.take, 1);
+    assert.equal(select.media.where.mediaAsset.visibility, "PUBLIC");
+    assert.equal(select.departures.where.status, "SCHEDULED");
+    assert.ok(select.departures.where.startDate.gte instanceof Date);
+    return [card()];
+  });
+  const response = await request("/packages");
+  assert.equal(response.status, 200);
+  const { data } = await response.json();
+  assert.equal(data[0].startingPrice.amount, "80.00");
+  assert.deepEqual(data[0].destinations, [{ slug: "goa", name: "Goa" }]);
+});
+
+test("package details retain the itinerary, full gallery and brochure privacy", async () => {
+  const image = { id: "image-1", storageKey: "photo.webp", mimeType: "image/webp", visibility: "PUBLIC", width: 800, height: 600, altText: "Beach", caption: null };
+  stub(prisma.package, "findFirst", async ({ select }: { select: ReturnType<typeof publicPackageDetailSelect> }) => {
+    assert.equal("take" in select.media, false);
+    assert.ok(select.itineraryDays);
+    assert.equal(select.departures.where.status, "SCHEDULED");
+    return card({
+      overview: "Full overview", inclusions: ["Guide"], exclusions: ["Flights"],
+      importantInformation: null, transportInformation: null, accommodationNotes: null,
+      cancellationRules: null, seoTitle: null, seoDescription: null,
+      brochureMedia: { id: "private-pdf", storageKey: "private.pdf", mimeType: "application/pdf", originalName: "Private.pdf", visibility: "PRIVATE" },
+      itineraryDays: [{ dayNumber: 1, title: "Arrival", description: "Meet your guide" }],
+      media: [{ mediaAsset: image }, { mediaAsset: { ...image, id: "image-2" } }],
+      departures: [{ id: "departure-1", status: "SCHEDULED", startDate: new Date("2099-01-01"), endDate: new Date("2099-01-03"), currency: "INR", pricePerPerson: new Prisma.Decimal(80) }],
+    });
+  });
+  stub(prisma.package, "findMany", async ({ where, select }: { where: { status: string }; select: { media: { take: number } } }) => {
+    assert.equal(where.status, "PUBLISHED");
+    assert.equal(select.media.take, 1);
+    return [];
+  });
+  const response = await request("/packages/test-tour");
+  assert.equal(response.status, 200);
+  const { data } = packageDetailResponseSchema.parse(await response.json());
+  assert.equal(data.media.length, 2);
+  assert.equal(data.itinerary[0]?.title, "Arrival");
+  assert.equal(data.brochure, null);
+  assert.equal(data.departures[0]?.price?.amount, "80.00");
+});
+
+test("price filters hydrate only the selected page and preserve computed departure prices", async () => {
+  let reads = 0;
+  stub(prisma.package, "findMany", async ({ select, where }: { select: Record<string, unknown>; where: { id?: { in: string[] } } }) => {
+    reads++;
+    if (reads === 1) {
+      assert.equal("media" in select, false);
+      assert.equal("destinations" in select, false);
+      return [card({ id: "expensive", basePrice: new Prisma.Decimal(200), departures: [] }),
+        card({ id: "cheap", basePrice: new Prisma.Decimal(40), departures: [] }),
+        card({ id: "request", priceBasis: "ON_REQUEST" }), card()];
+    }
+    assert.deepEqual(where.id, { in: ["tour-1"] });
+    return [card()];
+  });
+  const response = await request("/packages?sort=price-asc&maxPrice=150&page=2&pageSize=1");
+  assert.equal(response.status, 200);
+  const body = await response.json();
+  assert.deepEqual(body.meta, { page: 2, pageSize: 1, total: 2 });
+  assert.equal(body.data[0].id, "tour-1");
+  assert.equal(body.data[0].startingPrice.amount, "80.00");
+  assert.equal(reads, 2);
+});
+
+test("gallery package filters stay in SQL and exclude unpublished packages and private images", async () => {
+  stub(prisma.package, "findFirst", async () => { throw new Error("No preliminary package query should be needed"); });
+  stub(prisma.galleryAlbum, "count", async () => 0);
+  stub(prisma.galleryAlbum, "findMany", async ({ where, select }: {
+    where: { destination: { slug: string; packages: { some: { package: { slug: string; status: string; isDemo: boolean } } } } };
+    select: { images: { where: { mediaAsset: { visibility: string } }; take?: number } };
+  }) => {
+    assert.equal(where.destination.slug, "goa");
+    assert.equal(where.destination.packages.some.package.slug, "test-tour");
+    assert.equal(where.destination.packages.some.package.status, "PUBLISHED");
+    assert.equal(where.destination.packages.some.package.isDemo, false);
+    assert.equal(select.images.where.mediaAsset.visibility, "PUBLIC");
+    assert.equal(select.images.take, undefined);
+    return [];
+  });
+  assert.equal((await request("/gallery/albums?package=test-tour&destination=goa&includeImages=true")).status, 200);
+});
+
+test("gallery package options use published labels without loading card relations", async () => {
+  stub(prisma.package, "findMany", async ({ where, select }: { where: { status: string; isDemo: boolean }; select: object }) => {
+    assert.equal(where.status, "PUBLISHED");
+    assert.equal(where.isDemo, false);
+    assert.deepEqual(select, { slug: true, title: true });
+    return [{ slug: "test-tour", title: "Test tour" }];
+  });
+  const response = await request("/package-options");
+  assert.equal(response.status, 200);
+  assert.deepEqual(await response.json(), { data: [{ slug: "test-tour", title: "Test tour" }] });
+});
+
+test("blog list keeps reading time and never exposes a private cover", async () => {
+  stub(prisma.blogPost, "count", async () => 1);
+  stub(prisma.blogPost, "findMany", async ({ select }: { select: Record<string, unknown> }) => {
+    assert.equal("publicAuthorBio" in select, false);
+    assert.equal("seoDescription" in select, false);
+    return [{ id: "post-1", slug: "story", title: "Story", excerpt: "Travel tips", contentHtml: `<p>${"word ".repeat(440)}</p>`,
+      category: null, coverMedia: { visibility: "PRIVATE" }, publishedAt: new Date("2026-01-01"),
+      publicAuthorName: "Author", relatedTours: [], isDemo: false }];
+  });
+  const response = await request("/blog");
+  assert.equal(response.status, 200);
+  const { data } = await response.json();
+  assert.equal(data[0].readingMinutes, 2);
+  assert.equal(data[0].cover, null);
+  assert.equal("contentHtml" in data[0], false);
 });

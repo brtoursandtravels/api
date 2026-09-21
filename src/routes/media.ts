@@ -131,7 +131,7 @@ adminMediaRouter.get("/", async (request, response) => {
     })
     .parse(request.query);
   const where = query.visibility ? { visibility: query.visibility } : {};
-  const [total, records] = await prisma.$transaction([
+  const [total, records] = await Promise.all([
     prisma.mediaAsset.count({ where }),
     prisma.mediaAsset.findMany({
       where,

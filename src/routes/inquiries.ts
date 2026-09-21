@@ -369,11 +369,15 @@ adminInquiriesRouter.get("/", async (request, response) => {
         }
       : {}),
   };
-  const [total, records] = await prisma.$transaction([
+  const [total, records] = await Promise.all([
     prisma.enquiry.count({ where }),
     prisma.enquiry.findMany({
       where,
-      include: { assignedTo: { select: { id: true, displayName: true } } },
+      select: {
+        id: true, publicReference: true, type: true, status: true, name: true,
+        email: true, phone: true, packageTitleSnapshot: true, createdAt: true, updatedAt: true,
+        assignedTo: { select: { id: true, displayName: true } },
+      },
       orderBy: { createdAt: "desc" },
       skip: (query.page - 1) * query.pageSize,
       take: query.pageSize,

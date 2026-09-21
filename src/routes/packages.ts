@@ -5,8 +5,9 @@ import { env } from "../env.js";
 import type { Prisma } from "../generated/prisma/client.js";
 import { HttpError } from "../lib/http-error.js";
 import {
-  publicPackageCardInclude,
-  publicPackageDetailInclude,
+  publicPackageCardSelect,
+  publicPackageDetailSelect,
+  startingPrice,
   toPackageCard,
   toPackageDetail,
   type PublicPackageCardRecord,
@@ -79,7 +80,10 @@ packageRouter.get("/", publicReadCache, async (request, response) => {
   if (computedPriceQuery) {
     const records = await prisma.package.findMany({
       where,
-      include: publicPackageCardInclude,
+      select: {
+        id: true, basePrice: true, priceBasis: true, currency: true,
+        departures: publicPackageCardSelect(now).departures,
+      },
       orderBy: { publishedAt: "desc" },
       take: 2001,
     });
@@ -90,8 +94,8 @@ packageRouter.get("/", publicReadCache, async (request, response) => {
         "Add a destination, category or duration before sorting by price.",
       );
     }
-    const cards = (records as PublicPackageCardRecord[])
-      .map((record) => toPackageCard(record, now))
+    const cards = records
+      .map((record) => ({ id: record.id, startingPrice: startingPrice(record, now) }))
       .filter((card) => {
         const price = card.startingPrice
           ? Number(card.startingPrice.amount)
@@ -121,8 +125,17 @@ packageRouter.get("/", publicReadCache, async (request, response) => {
       });
     const total = cards.length;
     const start = (query.page - 1) * query.pageSize;
+    const pageIds = cards.slice(start, start + query.pageSize).map((card) => card.id);
+    const pageRecords = pageIds.length ? await prisma.package.findMany({
+      where: { ...where, id: { in: pageIds } },
+      select: publicPackageCardSelect(now),
+    }) : [];
+    const byId = new Map(pageRecords.map((record) => [record.id, record]));
     response.json({
-      data: cards.slice(start, start + query.pageSize),
+      data: pageIds.flatMap((id) => {
+        const record = byId.get(id);
+        return record ? [toPackageCard(record, now)] : [];
+      }),
       meta: { page: query.page, pageSize: query.pageSize, total },
     });
     return;
@@ -144,7 +157,7 @@ packageRouter.get("/", publicReadCache, async (request, response) => {
     prisma.package.count({ where }),
     prisma.package.findMany({
       where,
-      include: publicPackageCardInclude,
+      select: publicPackageCardSelect(now),
       orderBy,
       skip: (query.page - 1) * query.pageSize,
       take: query.pageSize,
@@ -167,7 +180,7 @@ packageRouter.get("/:slug", publicEditableContentCache, async (request, response
       ...publicPackageWhere(now, env.DEMO_MODE),
       slug,
     },
-    include: publicPackageDetailInclude,
+    select: publicPackageDetailSelect(now),
   });
 
   if (!record) {
@@ -206,7 +219,7 @@ packageRouter.get("/:slug", publicEditableContentCache, async (request, response
     (item) => item.destinationId,
   );
   const categoryIds = typedRecord.categories.map((item) => item.categoryId);
-  const related = await prisma.package.findMany({
+  const related = destinationIds.length || categoryIds.length ? await prisma.package.findMany({
     where: {
       ...publicPackageWhere(now, env.DEMO_MODE),
       id: { not: typedRecord.id },
@@ -225,14 +238,14 @@ packageRouter.get("/:slug", publicEditableContentCache, async (request, response
           : []),
       ],
     },
-    include: publicPackageCardInclude,
+    select: publicPackageCardSelect(now),
     orderBy: [
       { isFeatured: "desc" },
       { featuredOrder: "asc" },
       { publishedAt: "desc" },
     ],
     take: 3,
-  });
+  }) : [];
   response.json({
     data: {
       ...toPackageDetail(typedRecord, now),
