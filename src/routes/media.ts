@@ -338,6 +338,7 @@ adminMediaRouter.delete("/:id", requireCsrf, async (request, response) => {
           albumImages: true,
           blogCovers: true,
           packageBrochures: true,
+          destinationCovers: true,
         },
       },
     },
@@ -352,12 +353,13 @@ adminMediaRouter.delete("/:id", requireCsrf, async (request, response) => {
     record._count.packageMedia +
     record._count.albumImages +
     record._count.blogCovers +
-    record._count.packageBrochures;
+    record._count.packageBrochures +
+    record._count.destinationCovers;
   if (references > 0) {
     throw new HttpError(
       409,
       "MEDIA_IN_USE",
-      "Remove this asset from packages, albums and articles before deleting it.",
+      "Remove this asset from packages, destinations, albums and articles before deleting it.",
     );
   }
   await prisma.$transaction(async (transaction) => {

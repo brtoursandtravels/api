@@ -13,6 +13,7 @@ import { HttpError } from "./lib/http-error.js";
 import { authRouter } from "./routes/auth.js";
 import { adminCatalogueRouter } from "./routes/admin-catalogue.js";
 import { adminContentRouter } from "./routes/admin-content.js";
+import { adminDeletionsRouter } from "./routes/admin-deletions.js";
 import { adminOperationsRouter } from "./routes/admin-operations.js";
 import { adminInquiriesRouter, inquiriesRouter } from "./routes/inquiries.js";
 import { packageRouter } from "./routes/packages.js";
@@ -127,6 +128,7 @@ app.use("/api/v1/admin", (_request, response, next) => {
 app.use("/api/v1/admin", adminOperationsRouter);
 app.use("/api/v1/admin", adminCatalogueRouter);
 app.use("/api/v1/admin", adminContentRouter);
+app.use("/api/v1/admin", adminDeletionsRouter);
 app.use("/api/v1/admin/media", adminMediaRouter);
 app.use("/api/v1/admin/inquiries", adminInquiriesRouter);
 

@@ -980,6 +980,49 @@ paths:
           ],
         responses: { "204": { description: Gallery album archived } },
       }
+  /admin/packages/{id}/permanent:
+    delete: &permanentDelete
+      tags: [Admin content]
+      summary: Permanently delete the selected content entry
+      description: Requires a content editor or super admin. Deletes and audit logging are atomic. Shared media and customer enquiry history are retained.
+      security: [{ cookieAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, minLength: 1, maxLength: 120 }
+          description: Record ID, or key for settings and navigation
+        - { $ref: "#/components/parameters/CsrfToken" }
+      responses:
+        "204": { description: Entry permanently deleted }
+        "401": { $ref: "#/components/responses/Error" }
+        "403": { $ref: "#/components/responses/Error" }
+        "404": { $ref: "#/components/responses/Error" }
+        "409": { $ref: "#/components/responses/Error" }
+  /admin/destinations/{id}/permanent:
+    delete: *permanentDelete
+  /admin/categories/{id}/permanent:
+    delete: *permanentDelete
+  /admin/pages/{id}/permanent:
+    delete: *permanentDelete
+  /admin/blog/posts/{id}/permanent:
+    delete: *permanentDelete
+  /admin/blog/categories/{id}/permanent:
+    delete: *permanentDelete
+  /admin/blog/tags/{id}/permanent:
+    delete: *permanentDelete
+  /admin/gallery/albums/{id}/permanent:
+    delete: *permanentDelete
+  /admin/home/sections/{id}/permanent:
+    delete: *permanentDelete
+  /admin/faqs/{id}/permanent:
+    delete: *permanentDelete
+  /admin/testimonials/{id}/permanent:
+    delete: *permanentDelete
+  /admin/settings/{id}/permanent:
+    delete: *permanentDelete
+  /admin/navigation/{id}/permanent:
+    delete: *permanentDelete
 components:
   securitySchemes:
     cookieAuth:

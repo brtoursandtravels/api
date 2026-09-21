@@ -22,6 +22,7 @@
     "test:activity-logs": "tsx --test src/routes/activity-log.test.ts",
     "test:dashboard": "tsx --test src/routes/dashboard.test.ts",
     "test:admin-read": "tsx --test src/routes/admin-read.test.ts",
+    "test:admin-deletions": "tsx --test src/routes/admin-deletions.test.ts",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:migrate:deploy": "prisma migrate deploy",

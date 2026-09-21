@@ -65,7 +65,7 @@ async function copySeedAsset(source: string, root: string, image: string) {
   await copyFile(source, target);
 }
 
-async function syncCatalogueMedia() {
+async function syncCatalogueMedia(bootstrap: boolean) {
   const mediaByKey = new Map<string, string>();
   const assets = [
     ...tourDestinations.map((destination) => ({
@@ -103,22 +103,13 @@ async function syncCatalogueMedia() {
     await copySeedAsset(source, publicMediaRoot, asset.image);
     await copySeedAsset(source, runtimeMediaRoot, asset.image);
 
+    // Static files are needed in each deployment; admin-managed database rows are not reset.
+    if (!bootstrap) continue;
+
     const storageKey = `seed/tours/${asset.image}`;
     const record = await prisma.mediaAsset.upsert({
       where: { storageKey },
-      update: {
-        originalName: asset.image,
-        mimeType: "image/webp",
-        sizeBytes: BigInt(file.size),
-        width: asset.width,
-        height: asset.height,
-        altText: asset.altText,
-        caption: asset.caption,
-        sourceNotes,
-        licenseNotes,
-        visibility: "PUBLIC",
-        provider: "LOCAL",
-      },
+      update: {},
       create: {
         storageKey,
         originalName: asset.image,
@@ -322,12 +313,16 @@ async function createMissingPackages(mediaByKey: Map<string, string>) {
 }
 
 try {
-  const mediaByKey = await syncCatalogueMedia();
-  await ensureDestinationsAndCategories(mediaByKey);
-  const result = await createMissingPackages(mediaByKey);
-  console.log(
-    `Catalogue seed completed: ${result.created} packages created, ${result.preserved} existing packages preserved and ${mediaByKey.size} media assets synchronised.`,
-  );
+  const initialized = await prisma.catalogueSeedState.findUnique({ where: { key: "initial-catalogue" } });
+  const mediaByKey = await syncCatalogueMedia(!initialized);
+  if (!initialized) {
+    await ensureDestinationsAndCategories(mediaByKey);
+    const result = await createMissingPackages(mediaByKey);
+    await prisma.catalogueSeedState.upsert({ where: { key: "initial-catalogue" }, create: { key: "initial-catalogue" }, update: {} });
+    console.log(`Catalogue initialized: ${result.created} packages created, ${result.preserved} existing packages preserved.`);
+  } else {
+    console.log("Catalogue already initialized. Static assets copied; admin-managed content left unchanged.");
+  }
 } finally {
   await prisma.$disconnect();
 }

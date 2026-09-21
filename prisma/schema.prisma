@@ -462,6 +462,12 @@ model HomepageSection {
   @@index([status, publishedAt, isVisible, sortOrder])
 }
 
+// Tracks bootstrap separately from editable content so deleted starter entries stay deleted.
+model CatalogueSeedState {
+  key         String   @id @db.VarChar(80)
+  completedAt DateTime @default(now()) @db.DateTime(3)
+}
+
 model Setting {
   key         String   @id @db.VarChar(120)
   value       Json

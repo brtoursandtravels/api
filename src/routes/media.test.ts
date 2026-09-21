@@ -22,6 +22,7 @@ delete process.env.VERCEL;
 
 const { prisma } = await import("../database.js");
 const { adminMediaRouter } = await import("./media.js");
+const { createSessionCsrfToken } = await import("../lib/security.js");
 const originalFindUnique = prisma.mediaAsset.findUnique;
 
 const app = express();
@@ -111,6 +112,16 @@ test("admin preview still requires a session", async () => {
   assert.equal(response.status, 401);
   assert.equal(lookup.mock.callCount(), 0);
   assert.equal(response.headers.get("location"), null);
+});
+
+test("media used only as a destination cover cannot be deleted", async () => {
+  const cover = { ...record, _count: { packageMedia: 0, albumImages: 0, blogCovers: 0, packageBrochures: 0, destinationCovers: 1 } };
+  mockMediaLookup(cover);
+  const response = await fetch(`${baseUrl}/api/v1/admin/media/${id}`, {
+    method: "DELETE", headers: { "x-test-role": "CONTENT_EDITOR", "x-csrf-token": createSessionCsrfToken("test-session") },
+  });
+  assert.equal(response.status, 409);
+  assert.equal((await response.json()).code, "MEDIA_IN_USE");
 });
 
 test("roles without media access are rejected", async () => {

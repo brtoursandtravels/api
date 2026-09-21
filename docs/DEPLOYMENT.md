@@ -67,14 +67,37 @@ administrator interactively only on a trusted terminal.
 
 `npm start` automatically runs `db:prepare:deploy` first. This regenerates the
 Prisma client, applies pending migrations, and runs the production-safe
-catalogue seed. The catalogue seed creates missing destinations, categories,
-packages and project-owned media without replacing packages that already exist
-and may have been edited in the admin panel. The broader idempotent demo seed
+catalogue seed. The catalogue seed initializes destinations, categories,
+packages and project-owned media only once. `CatalogueSeedState` preserves that
+initialization across deployments, so deleted or renamed records are not recreated.
+Static media files are copied into each build without changing admin-managed media
+metadata. The broader idempotent demo seed
 runs only when `NODE_ENV` is not `production` and `ALLOW_DEMO_SEED=true`.
 Production starts therefore skip demo enquiries and other broad sample data. The
 `20260914143000_published_sample_testimonials` migration installs three
 explicitly labelled sample review cards; replace them with consented customer
 reviews and archive the samples before launch sign-off.
+
+## Confirmed content deletion
+
+Deploy the API before the admin. Migration `20260921120000_catalogue_seed_state`
+marks existing catalogues as initialized without changing their content.
+`DELETE /api/v1/admin/<resource>/<id-or-key>/permanent` permanently removes an
+entry in an authenticated, CSRF-protected transaction with its audit event.
+Supported resources: packages, destinations, categories, pages, blog/posts,
+blog/categories, blog/tags, gallery/albums, home/sections, faqs, testimonials,
+settings and navigation. Existing archive endpoints remain available.
+
+Package deletion cascades to its itinerary, departures, FAQs and relation rows.
+Customer enquiries retain their snapshots and receive null package/departure
+references. Media-library files are retained when deleting a package, article or
+album. Direct media deletion retains its existing in-use checks and storage cleanup.
+Taxonomy deletion removes links without deleting packages or articles.
+
+Public API caches now revalidate after 30 seconds, and the website uses the same
+interval for editable content. Cached pages refresh on subsequent visits; already
+open browser pages need a refresh. Do not promise immediate removal from every cache.
+Run `npm run test:admin-deletions` before deployment.
 
 ## Dashboard performance rollout
 
@@ -108,7 +131,8 @@ requested page. Blog, gallery and supporting public queries select only DTO
 fields; gallery package filters use a relation predicate without a preliminary
 lookup. All admin list and pre-save validation reads run without transactions;
 multi-record writes retain their transactions. Admin responses use private,
-no-store caching. Existing public CDN cache policies remain unchanged.
+no-store caching. Editable public content uses the 30-second cache policy
+described above so deleted entries do not linger for hours.
 
 The public website also pins rendering to `bom1`, and shares API results between
 metadata, layouts and page content within each render. Editors load media/tag
