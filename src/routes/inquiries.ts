@@ -127,7 +127,7 @@ inquiriesRouter.post(
           where: {
             id: input.departureId,
             packageId: packageRecord!.id,
-            status: "SCHEDULED",
+            status: { in: ["SCHEDULED", "FILLING_FAST"] },
             startDate: { gte: now },
           },
           select: { id: true },

@@ -144,8 +144,9 @@ test("package cards fetch one public cover, upcoming prices and no itinerary", a
     assert.equal("overview" in select, false);
     assert.equal("itineraryDays" in select, false);
     assert.equal(select.media.take, 1);
+    assert.deepEqual(select.media.orderBy, [{ isCover: "desc" }, { sortOrder: "asc" }]);
     assert.equal(select.media.where.mediaAsset.visibility, "PUBLIC");
-    assert.equal(select.departures.where.status, "SCHEDULED");
+    assert.deepEqual(select.departures.where.status, { in: ["SCHEDULED", "FILLING_FAST"] });
     assert.ok(select.departures.where.startDate.gte instanceof Date);
     return [card()];
   });
@@ -161,15 +162,15 @@ test("package details retain the itinerary, full gallery and brochure privacy", 
   stub(prisma.package, "findFirst", async ({ select }: { select: ReturnType<typeof publicPackageDetailSelect> }) => {
     assert.equal("take" in select.media, false);
     assert.ok(select.itineraryDays);
-    assert.equal(select.departures.where.status, "SCHEDULED");
+    assert.deepEqual(select.departures.where.status, { in: ["SCHEDULED", "FILLING_FAST"] });
     return card({
       overview: "Full overview", inclusions: ["Guide"], exclusions: ["Flights"],
       importantInformation: null, transportInformation: null, accommodationNotes: null,
       cancellationRules: null, seoTitle: null, seoDescription: null,
       brochureMedia: { id: "private-pdf", storageKey: "private.pdf", mimeType: "application/pdf", originalName: "Private.pdf", visibility: "PRIVATE" },
-      itineraryDays: [{ dayNumber: 1, title: "Arrival", description: "Meet your guide" }],
+      itineraryDays: [{ dayNumber: 1, title: "Arrival", description: "Meet your guide", activities: ["Mountain walk"], meals: "Breakfast", accommodation: "Hill lodge", imageMedia: image }, { dayNumber: 2, title: "Return", description: "Return home", imageMedia: { ...image, visibility: "PRIVATE" } }],
       media: [{ mediaAsset: image }, { mediaAsset: { ...image, id: "image-2" } }],
-      departures: [{ id: "departure-1", status: "SCHEDULED", startDate: new Date("2099-01-01"), endDate: new Date("2099-01-03"), currency: "INR", pricePerPerson: new Prisma.Decimal(80) }],
+      departures: [{ id: "departure-1", status: "FILLING_FAST", seatsAvailable: 4, startDate: new Date("2099-01-01"), endDate: new Date("2099-01-03"), currency: "INR", pricePerPerson: new Prisma.Decimal(80) }],
     });
   });
   stub(prisma.package, "findMany", async ({ where, select }: { where: { status: string }; select: { media: { take: number } } }) => {
@@ -182,6 +183,13 @@ test("package details retain the itinerary, full gallery and brochure privacy", 
   const { data } = packageDetailResponseSchema.parse(await response.json());
   assert.equal(data.media.length, 2);
   assert.equal(data.itinerary[0]?.title, "Arrival");
+  assert.equal(data.itinerary[0]?.image?.id, "image-1");
+  assert.deepEqual(data.itinerary[0]?.activities, ["Mountain walk"]);
+  assert.equal(data.itinerary[0]?.meals, "Breakfast");
+  assert.equal(data.itinerary[0]?.accommodation, "Hill lodge");
+  assert.equal(data.itinerary[1]?.image, null);
+  assert.equal(data.departures[0]?.status, "FILLING_FAST");
+  assert.equal(data.departures[0]?.seatsAvailable, 4);
   assert.equal(data.brochure, null);
   assert.equal(data.departures[0]?.price?.amount, "80.00");
 });

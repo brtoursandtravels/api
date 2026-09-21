@@ -39,7 +39,7 @@ adminOperationsRouter.get("/dashboard", async (_request, response) => {
       _count: { _all: true },
     }),
     prisma.departure.count({
-      where: { status: "SCHEDULED", startDate: { gte: now } },
+      where: { status: { in: ["SCHEDULED", "FILLING_FAST"] }, startDate: { gte: now } },
     }),
     prisma.enquiry.groupBy({
       by: ["status"],

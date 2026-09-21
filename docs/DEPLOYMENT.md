@@ -299,3 +299,12 @@ delivery, administrator login and a non-production enquiry.
 - Keep `storage/media` persistent and include it with every database backup.
 - For updates, pull the reviewed revision, run `npm ci` and production builds,
   deploy migrations, then restart the three services with `systemctl restart`.
+
+
+## Package editor media migration
+
+Deploy `20260921180000_package_editor_media` before the new admin build. It adds an optional itinerary photo relation, optional departure seat count, the FILLING_FAST departure status, and MediaContent binary storage. Existing package data is preserved.
+
+When VERCEL is set, new uploads store their bytes in MediaContent in the same database create as their metadata. This avoids dependence on a function instance's temporary filesystem. New storage keys begin with `database/`; both public and authenticated file handlers read those bytes through their existing visibility/authentication checks. Local uploads and bundled seed assets retain their existing paths. Include MediaContent in database backups. Existing temporary uploads are not recoverable through this migration if their original files have already expired.
+
+The shared admin uploader accepts files up to 4 MB to fit the deployed request path. Removing a package/day photo detaches its relation, while permanent media deletion is rejected while the asset is in use, including itinerary photos.

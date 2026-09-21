@@ -10,6 +10,7 @@ import { env } from "../env.js";
 import { HttpError } from "../lib/http-error.js";
 import { activityContext, recordActivity } from "../lib/activity-log.js";
 import { publicMediaUrl } from "../lib/media-url.js";
+import { mediaDto } from "../lib/admin-media.js";
 import { randomToken } from "../lib/security.js";
 import {
   optionalSession,
@@ -44,41 +45,6 @@ function absoluteMediaPath(storageKey: string) {
   return target;
 }
 
-function mediaDto(record: {
-  id: string;
-  storageKey: string;
-  originalName: string;
-  mimeType: string;
-  sizeBytes: bigint;
-  width: number | null;
-  height: number | null;
-  altText: string;
-  caption: string | null;
-  sourceNotes: string | null;
-  licenseNotes: string | null;
-  visibility: string;
-  provider: string;
-  createdAt: Date;
-  updatedAt: Date;
-}) {
-  return {
-    id: record.id,
-    url: publicMediaUrl(record),
-    originalName: record.originalName,
-    mimeType: record.mimeType,
-    sizeBytes: record.sizeBytes.toString(),
-    width: record.width,
-    height: record.height,
-    altText: record.altText,
-    caption: record.caption,
-    sourceNotes: record.sourceNotes,
-    licenseNotes: record.licenseNotes,
-    visibility: record.visibility,
-    provider: record.provider,
-    createdAt: record.createdAt.toISOString(),
-    updatedAt: record.updatedAt.toISOString(),
-  };
-}
 
 export const publicMediaRouter = Router();
 publicMediaRouter.get("/:id", async (request, response) => {
@@ -112,6 +78,12 @@ publicMediaRouter.get("/:id", async (request, response) => {
     );
     response.setHeader("content-security-policy", "sandbox");
   }
+  if (record.storageKey.startsWith("database/")) {
+    const content = await prisma.mediaContent.findUnique({ where: { mediaAssetId: record.id }, select: { bytes: true } });
+    if (!content) throw new HttpError(404, "MEDIA_NOT_FOUND", "The stored file was not found.");
+    response.type(record.mimeType).send(Buffer.from(content.bytes));
+    return;
+  }
   response.type(record.mimeType).sendFile(absoluteMediaPath(record.storageKey));
 });
 
@@ -126,11 +98,17 @@ adminMediaRouter.get("/", async (request, response) => {
   const query = z
     .object({
       visibility: z.enum(["PUBLIC", "PRIVATE"]).optional(),
+      q: z.string().trim().max(200).optional(),
+      kind: z.enum(["image", "pdf"]).optional(),
       page: z.coerce.number().int().min(1).max(10_000).default(1),
       pageSize: z.coerce.number().int().min(1).max(100).default(25),
     })
     .parse(request.query);
-  const where = query.visibility ? { visibility: query.visibility } : {};
+  const where = {
+    ...(query.visibility ? { visibility: query.visibility } : {}),
+    ...(query.kind ? { mimeType: query.kind === "pdf" ? "application/pdf" : { startsWith: "image/" } } : {}),
+    ...(query.q ? { OR: [{ originalName: { contains: query.q } }, { altText: { contains: query.q } }] } : {}),
+  };
   const [total, records] = await Promise.all([
     prisma.mediaAsset.count({ where }),
     prisma.mediaAsset.findMany({
@@ -213,10 +191,13 @@ adminMediaRouter.post(
       extension = "webp";
     }
     const now = new Date();
-    const storageKey = `${now.getUTCFullYear()}/${String(now.getUTCMonth() + 1).padStart(2, "0")}/${randomToken(24)}.${extension}`;
+    const durable = Boolean(process.env.VERCEL);
+    const storageKey = `${durable ? "database/" : ""}${now.getUTCFullYear()}/${String(now.getUTCMonth() + 1).padStart(2, "0")}/${randomToken(24)}.${extension}`;
     const absolutePath = absoluteMediaPath(storageKey);
-    await mkdir(path.dirname(absolutePath), { recursive: true });
-    await writeFile(absolutePath, output, { flag: "wx" });
+    if (!durable) {
+      await mkdir(path.dirname(absolutePath), { recursive: true });
+      await writeFile(absolutePath, output, { flag: "wx" });
+    }
 
     try {
       const record = await prisma.mediaAsset.create({
@@ -233,6 +214,7 @@ adminMediaRouter.post(
           licenseNotes: fields.licenseNotes ?? null,
           visibility: fields.visibility,
           uploadedById: request.auth!.user.id,
+          ...(durable ? { content: { create: { bytes: new Uint8Array(output) } } } : {}),
         },
       });
       await prisma.auditLog.create({
@@ -296,6 +278,12 @@ adminMediaRouter.get("/:id/file", async (request, response) => {
     );
     response.setHeader("content-security-policy", "sandbox");
   }
+  if (record.storageKey.startsWith("database/")) {
+    const content = await prisma.mediaContent.findUnique({ where: { mediaAssetId: record.id }, select: { bytes: true } });
+    if (!content) throw new HttpError(404, "MEDIA_NOT_FOUND", "The stored file was not found.");
+    response.type(record.mimeType).send(Buffer.from(content.bytes));
+    return;
+  }
   response.type(record.mimeType).sendFile(absoluteMediaPath(record.storageKey));
 });
 
@@ -339,6 +327,7 @@ adminMediaRouter.delete("/:id", requireCsrf, async (request, response) => {
           blogCovers: true,
           packageBrochures: true,
           destinationCovers: true,
+          itineraryImages: true,
         },
       },
     },
@@ -354,7 +343,8 @@ adminMediaRouter.delete("/:id", requireCsrf, async (request, response) => {
     record._count.albumImages +
     record._count.blogCovers +
     record._count.packageBrochures +
-    record._count.destinationCovers;
+    record._count.destinationCovers +
+    (record._count.itineraryImages ?? 0);
   if (references > 0) {
     throw new HttpError(
       409,

@@ -192,3 +192,25 @@ test("unknown media returns 404 instead of a static redirect", async () => {
   assert.equal(response.status, 404);
   assert.equal(response.headers.get("location"), null);
 });
+
+
+test("an image attached only to an itinerary day cannot be deleted", async () => {
+  mockMediaLookup({ ...record, _count: { packageMedia: 0, albumImages: 0, blogCovers: 0, packageBrochures: 0, destinationCovers: 0, itineraryImages: 1 } } as typeof record);
+  const response = await fetch(`${baseUrl}/api/v1/admin/media/${id}`, { method: "DELETE", headers: { "x-test-role": "CONTENT_EDITOR", "x-csrf-token": createSessionCsrfToken("test-session") } });
+  assert.equal(response.status, 409);
+  assert.equal((await response.json()).code, "MEDIA_IN_USE");
+});
+
+test("durable uploads are read from database bytes with private response caching", async () => {
+  process.env.VERCEL = "1";
+  mockMediaLookup({ ...record, storageKey: "database/2026/09/test.webp", visibility: "PRIVATE" });
+  const original = prisma.mediaContent.findUnique;
+  const bytes = Buffer.from("durable-image-content");
+  Object.defineProperty(prisma.mediaContent, "findUnique", { configurable: true, writable: true, value: async () => ({ bytes }) });
+  try {
+    const response = await requestFile();
+    assert.equal(response.status, 200);
+    assert.equal(response.headers.get("cache-control"), "private, no-store");
+    assert.deepEqual(Buffer.from(await response.arrayBuffer()), bytes);
+  } finally { Object.defineProperty(prisma.mediaContent, "findUnique", { configurable: true, writable: true, value: original }); }
+});

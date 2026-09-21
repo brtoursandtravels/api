@@ -129,6 +129,26 @@ function request(fields: Record<string, unknown>, id?: string, role = "CONTENT_E
   });
 }
 
+test("multiple categories are rejected on create and update before changing package data", async () => {
+  const fields = { categoryIds: ["adventure", "cultural"], destinationNames: ["New destination"] };
+  const create = await request(fields);
+  assert.equal(create.status, 400);
+  assert.match((await create.json()).error, /Select only one category/);
+  assert.equal(packages.size, 0);
+  assert.equal(places.length, 0);
+  assert.equal((await request({ destinationNames: ["Matheran"] })).status, 201);
+  const original = structuredClone({ packages, places, links });
+  const update = await request(fields, "package-1");
+  assert.equal(update.status, 400);
+  assert.match((await update.json()).error, /Select only one category/);
+  assert.deepEqual({ packages, places, links }, original);
+});
+test("a category must exist in the available Categories master", async () => {
+  const response = await request({ categoryIds: ["missing-category"] });
+  assert.equal(response.status, 400);
+  assert.match((await response.json()).error, /categories are unavailable/);
+  assert.equal(packages.size, 0);
+});
 test("typed names are trimmed, deduplicated, and linked in entered order", async () => {
   const response = await request({ destinationNames: ["  Matheran  ", "Mahabaleshwar", "matheran"] });
   assert.equal(response.status, 201);

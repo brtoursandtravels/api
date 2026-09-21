@@ -2,6 +2,8 @@ import { Router } from "express";
 import { z } from "zod";
 import { prisma } from "../database.js";
 import type { Prisma } from "../generated/prisma/client.js";
+import { mediaDto } from "../lib/admin-media.js";
+import { createCategoryWithSlug } from "../lib/category-slug.js";
 import { HttpError } from "../lib/http-error.js";
 import { activityContext, recordActivity } from "../lib/activity-log.js";
 import { destinationNamesSchema, resolvePackageDestinations } from "../lib/package-destinations.js";
@@ -36,11 +38,12 @@ function jsonStringList(value: Prisma.JsonValue | null): string[] {
 
 const itinerarySchema = z.object({
   dayNumber: z.number().int().min(1).max(90),
-  title: z.string().trim().min(1).max(200),
-  description: z.string().trim().min(1).max(10_000),
+  title: z.string().trim().max(200),
+  description: z.string().trim().max(10_000),
   activities: stringList.optional(),
   meals: z.string().trim().max(200).nullable().optional(),
   accommodation: z.string().trim().max(255).nullable().optional(),
+  imageMediaId: z.string().max(30).nullable().optional(),
 });
 
 const departureSchema = z
@@ -56,9 +59,10 @@ const departureSchema = z
       .optional(),
     currency: z.string().trim().toUpperCase().length(3).default("INR"),
     status: z
-      .enum(["SCHEDULED", "CANCELLED", "COMPLETED"])
+      .enum(["SCHEDULED", "FILLING_FAST", "CANCELLED", "COMPLETED"])
       .default("SCHEDULED"),
     note: z.string().trim().max(500).nullable().optional(),
+    seatsAvailable: z.number().int().min(0).max(100000).nullable().optional(),
   })
   .refine((value) => value.endDate >= value.startDate, {
     path: ["endDate"],
@@ -69,8 +73,8 @@ const packageInputSchema = z
   .object({
     slug: slugSchema,
     title: z.string().trim().min(2).max(200),
-    summary: z.string().trim().min(10).max(500),
-    overview: z.string().trim().min(20).max(30_000),
+    summary: z.string().trim().max(500),
+    overview: z.string().trim().max(30_000),
     days: z.number().int().min(1).max(90),
     nights: z.number().int().min(0).max(89),
     startingCity: z.string().trim().max(160).nullable().optional(),
@@ -100,7 +104,7 @@ const packageInputSchema = z
     isDemo: z.boolean().default(false),
     destinationIds: z.array(z.string().max(30)).max(20).default([]),
     destinationNames: destinationNamesSchema.optional(),
-    categoryIds: z.array(z.string().max(30)).max(20).default([]),
+    categoryIds: z.array(z.string().max(30)).max(1, "Select only one category.").default([]),
     itinerary: z.array(itinerarySchema).max(90).default([]),
     departures: z.array(departureSchema).max(200).default([]),
     media: z
@@ -118,6 +122,14 @@ const packageInputSchema = z
   })
   .strict()
   .superRefine((value, context) => {
+    if (value.status === "PUBLISHED") {
+      value.itinerary.forEach((day, index) => {
+        if (!day.title) context.addIssue({ code: "custom", path: ["itinerary", index, "title"], message: "Add a day title." });
+        if (!day.description) context.addIssue({ code: "custom", path: ["itinerary", index, "description"], message: "Add a day description." });
+      });
+      if (value.summary.length < 10) context.addIssue({ code: "custom", path: ["summary"], message: "A published package needs a summary of at least 10 characters." });
+      if (value.overview.length < 20) context.addIssue({ code: "custom", path: ["overview"], message: "A published package needs an overview of at least 20 characters." });
+    }
     if (value.destinationNames !== undefined && value.destinationIds.length) {
       context.addIssue({ code: "custom", path: ["destinationNames"], message: "Use destination names or IDs, not both." });
     }
@@ -128,7 +140,7 @@ const packageInputSchema = z
         message: "Nights cannot exceed days.",
       });
     }
-    if (value.priceBasis !== "ON_REQUEST" && value.basePrice === null) {
+    if (value.priceBasis !== "ON_REQUEST" && value.basePrice == null) {
       context.addIssue({
         code: "custom",
         path: ["basePrice"],
@@ -170,19 +182,15 @@ const adminPackageInclude = {
     include: { destination: true },
   },
   categories: { include: { category: true } },
-  itineraryDays: { orderBy: { dayNumber: "asc" as const } },
+  itineraryDays: { orderBy: { dayNumber: "asc" as const }, include: { imageMedia: true } },
   departures: { orderBy: { startDate: "asc" as const } },
   media: {
     orderBy: { sortOrder: "asc" as const },
     include: {
-      mediaAsset: {
-        select: { id: true, altText: true, visibility: true, storageKey: true },
-      },
+      mediaAsset: true,
     },
   },
-  brochureMedia: {
-    select: { id: true, originalName: true, mimeType: true, visibility: true },
-  },
+  brochureMedia: true,
 } satisfies Prisma.PackageInclude;
 
 type AdminPackageRecord = Prisma.PackageGetPayload<{
@@ -211,7 +219,7 @@ function adminPackageDto(record: AdminPackageRecord) {
     cancellationRules: record.cancellationRules,
     seoTitle: record.seoTitle,
     seoDescription: record.seoDescription,
-    brochure: record.brochureMedia,
+    brochure: record.brochureMedia ? mediaDto(record.brochureMedia) : null,
     status: record.status,
     publishedAt: record.publishedAt?.toISOString() ?? null,
     isFeatured: record.isFeatured,
@@ -236,6 +244,8 @@ function adminPackageDto(record: AdminPackageRecord) {
       activities: jsonStringList(day.activities),
       meals: day.meals,
       accommodation: day.accommodation,
+      imageMediaId: day.imageMediaId,
+      image: day.imageMedia ? mediaDto(day.imageMedia) : null,
     })),
     departures: record.departures.map((departure) => ({
       id: departure.id,
@@ -245,9 +255,10 @@ function adminPackageDto(record: AdminPackageRecord) {
       currency: departure.currency,
       status: departure.status,
       note: departure.note,
+      seatsAvailable: departure.seatsAvailable,
     })),
     media: record.media.map((item) => ({
-      ...item.mediaAsset,
+      ...mediaDto(item.mediaAsset),
       sortOrder: item.sortOrder,
       isCover: item.isCover,
     })),
@@ -426,7 +437,7 @@ adminCatalogueRouter.post(
     await verifyRelations(
       input.destinationIds,
       input.categoryIds,
-      input.media.map((item) => item.mediaAssetId),
+      [...input.media.map((item) => item.mediaAssetId), ...input.itinerary.flatMap((day) => day.imageMediaId ? [day.imageMediaId] : [])],
       input.brochureMediaId,
     );
     const record = await prisma.$transaction(async (transaction) => {
@@ -461,6 +472,7 @@ adminCatalogueRouter.post(
             activities: day.activities ?? [],
             meals: day.meals ?? null,
             accommodation: day.accommodation ?? null,
+            imageMediaId: day.imageMediaId ?? null,
           })),
         });
       }
@@ -474,6 +486,7 @@ adminCatalogueRouter.post(
             currency: departure.currency,
             status: departure.status,
             note: departure.note ?? null,
+            seatsAvailable: departure.seatsAvailable ?? null,
           })),
         });
       }
@@ -514,7 +527,7 @@ adminCatalogueRouter.put(
     await verifyRelations(
       input.destinationIds,
       input.categoryIds,
-      input.media.map((item) => item.mediaAssetId),
+      [...input.media.map((item) => item.mediaAssetId), ...input.itinerary.flatMap((day) => day.imageMediaId ? [day.imageMediaId] : [])],
       input.brochureMediaId,
     );
     const current = await prisma.package.findUnique({ where: { id } });
@@ -566,6 +579,7 @@ adminCatalogueRouter.put(
             activities: day.activities ?? [],
             meals: day.meals ?? null,
             accommodation: day.accommodation ?? null,
+            imageMediaId: day.imageMediaId ?? null,
           })),
         });
       }
@@ -579,6 +593,7 @@ adminCatalogueRouter.put(
             currency: departure.currency,
             status: departure.status,
             note: departure.note ?? null,
+            seatsAvailable: departure.seatsAvailable ?? null,
           })),
         });
       }
@@ -678,6 +693,8 @@ const taxonomySchema = z
   })
   .strict();
 
+const categoryInputSchema = taxonomySchema.extend({ slug: slugSchema.optional() });
+
 async function verifyDestinationCoverMedia(coverMediaId?: string | null) {
   if (!coverMediaId) return;
   const count = await prisma.mediaAsset.count({
@@ -715,7 +732,7 @@ for (const resource of ["destinations", "categories"] as const) {
     `/${resource}`,
     requireCsrf,
     async (request, response) => {
-      const input = taxonomySchema.parse(request.body);
+      const input = (resource === "categories" ? categoryInputSchema : taxonomySchema).parse(request.body);
       if (resource === "destinations") {
         await verifyDestinationCoverMedia(input.coverMediaId);
       }
@@ -738,9 +755,12 @@ for (const resource of ["destinations", "categories"] as const) {
         sortOrder: input.sortOrder,
         isDemo: input.isDemo,
       };
-      const record = await (model.create as typeof prisma.destination.create)({
-        data,
+      const create = (slug: string) => (model.create as typeof prisma.destination.create)({
+        data: { ...data, slug },
       } as never);
+      const record = resource === "categories"
+        ? await createCategoryWithSlug(input.name, input.slug, create)
+        : await create(input.slug!);
       await recordActivity(prisma, request, response, resource === "destinations" ? "DESTINATION_CREATED" : "CATEGORY_CREATED",
         resource === "destinations" ? "Destination" : "Category", record.id, { after: { name: record.name, slug: record.slug, status: record.status } });
       response.status(201).json({
@@ -756,19 +776,19 @@ for (const resource of ["destinations", "categories"] as const) {
     requireCsrf,
     async (request, response) => {
       const id = z.string().max(30).parse(request.params.id);
-      const input = taxonomySchema.parse(request.body);
+      const input = (resource === "categories" ? categoryInputSchema : taxonomySchema).parse(request.body);
       if (resource === "destinations") {
         await verifyDestinationCoverMedia(input.coverMediaId);
       }
       const data = {
-        slug: input.slug,
+        ...(input.slug !== undefined ? { slug: input.slug } : {}),
         name: input.name,
         ...(resource === "destinations"
           ? {
               summary: input.description ?? null,
               coverMediaId: input.coverMediaId ?? null,
             }
-          : { description: input.description ?? null }),
+          : input.description !== undefined ? { description: input.description } : {}),
         status: input.status,
         publishedAt:
           input.status === "PUBLISHED"

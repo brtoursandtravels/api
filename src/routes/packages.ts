@@ -54,7 +54,7 @@ packageRouter.get("/", publicReadCache, async (request, response) => {
       ? {
           departures: {
             some: {
-              status: "SCHEDULED" as const,
+              status: { in: ["SCHEDULED", "FILLING_FAST"] as ("SCHEDULED" | "FILLING_FAST")[] },
               startDate: {
                 gte: new Date(`${query.month}-01T00:00:00.000Z`),
                 lt: new Date(

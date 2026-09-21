@@ -5,7 +5,7 @@ import { publicMediaSelect } from "./public-media.js";
 
 const packageImageSelection = {
   where: { mediaAsset: { visibility: "PUBLIC", mimeType: { startsWith: "image/" } } },
-  orderBy: { sortOrder: "asc" },
+  orderBy: [{ isCover: "desc" }, { sortOrder: "asc" }],
   select: { mediaAsset: { select: publicMediaSelect } },
 } satisfies Prisma.Package$mediaArgs;
 
@@ -20,7 +20,7 @@ export function publicPackageCardSelect(now: Date) {
     },
     categories: { select: { categoryId: true, category: { select: { slug: true, name: true } } } },
     departures: {
-      where: { status: "SCHEDULED", startDate: { gte: now } },
+      where: { status: { in: ["SCHEDULED", "FILLING_FAST"] }, startDate: { gte: now } },
       select: { status: true, startDate: true, pricePerPerson: true },
     },
     // List cards need one cover and no itinerary or long-form detail fields.
@@ -36,12 +36,12 @@ export function publicPackageDetailSelect(now: Date) {
     seoTitle: true, seoDescription: true,
     itineraryDays: {
       orderBy: { dayNumber: "asc" },
-      select: { dayNumber: true, title: true, description: true },
+      select: { dayNumber: true, title: true, description: true, activities: true, meals: true, accommodation: true, imageMedia: { select: { ...publicMediaSelect, visibility: true } } },
     },
     departures: {
-      where: { status: "SCHEDULED", startDate: { gte: now } },
+      where: { status: { in: ["SCHEDULED", "FILLING_FAST"] }, startDate: { gte: now } },
       orderBy: { startDate: "asc" },
-      select: { id: true, status: true, startDate: true, endDate: true, pricePerPerson: true, currency: true },
+      select: { id: true, status: true, startDate: true, endDate: true, pricePerPerson: true, currency: true, seatsAvailable: true },
     },
     media: packageImageSelection,
     brochureMedia: { select: { id: true, storageKey: true, originalName: true, mimeType: true, visibility: true } },
@@ -79,7 +79,7 @@ export function startingPrice(
     ...record.departures
       .filter(
         (departure) =>
-          departure.status === "SCHEDULED" && departure.startDate >= now,
+          (departure.status === "SCHEDULED" || departure.status === "FILLING_FAST") && departure.startDate >= now,
       )
       .map((departure) => departure.pricePerPerson),
   ].filter((amount) => amount !== null);
@@ -155,14 +155,20 @@ export function toPackageDetail(
       dayNumber: day.dayNumber,
       title: day.title,
       description: day.description,
+      activities: jsonStrings(day.activities),
+      meals: day.meals ?? null,
+      accommodation: day.accommodation ?? null,
+      image: day.imageMedia?.visibility === "PUBLIC" ? publicMedia(day.imageMedia) : null,
     })),
     departures: record.departures
       .filter(
         (departure) =>
-          departure.status === "SCHEDULED" && departure.startDate >= now,
+          (departure.status === "SCHEDULED" || departure.status === "FILLING_FAST") && departure.startDate >= now,
       )
       .map((departure) => ({
         id: departure.id,
+        status: departure.status,
+        seatsAvailable: departure.seatsAvailable ?? null,
         startDate: departure.startDate.toISOString().slice(0, 10),
         endDate: departure.endDate.toISOString().slice(0, 10),
         price:

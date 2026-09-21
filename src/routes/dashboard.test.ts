@@ -100,7 +100,7 @@ test("grouped counts preserve publication rules, statuses and zero-filled trends
     return [{ status: "PUBLISHED", _count: { _all: 7 } }, { status: "DRAFT", _count: { _all: 2 } }];
   });
   stub(prisma.departure, "count", async ({ where }: { where: { status: string; startDate: { gte: Date } } }) => {
-    assert.equal(where.status, "SCHEDULED");
+    assert.deepEqual(where.status, { in: ["SCHEDULED", "FILLING_FAST"] });
     assert.ok(where.startDate.gte instanceof Date);
     return 4;
   });
