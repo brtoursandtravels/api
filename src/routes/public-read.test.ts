@@ -247,10 +247,11 @@ test("gallery package options use published labels without loading card relation
   assert.deepEqual(await response.json(), { data: [{ slug: "test-tour", title: "Test tour" }] });
 });
 
-test("blog list keeps reading time and never exposes a private cover", async () => {
+test("blog pages keep reading time and private covers safe without retired author, tag or article data", async () => {
   stub(prisma.blogPost, "count", async () => 1);
   stub(prisma.blogPost, "findMany", async ({ select }: { select: Record<string, unknown> }) => {
     assert.equal("publicAuthorBio" in select, false);
+    assert.equal("publicAuthorName" in select, false);
     assert.equal("seoDescription" in select, false);
     return [{ id: "post-1", slug: "story", title: "Story", excerpt: "Travel tips", contentHtml: `<p>${"word ".repeat(440)}</p>`,
       category: null, coverMedia: { visibility: "PRIVATE" }, publishedAt: new Date("2026-01-01"),
@@ -262,4 +263,22 @@ test("blog list keeps reading time and never exposes a private cover", async () 
   assert.equal(data[0].readingMinutes, 2);
   assert.equal(data[0].cover, null);
   assert.equal("contentHtml" in data[0], false);
+  assert.equal(data[0].author, null);
+  stub(prisma.blogPost, "findFirst", async ({ select }: { select: Record<string, unknown> }) => {
+    for (const field of ["publicAuthorName", "publicAuthorBio", "tags", "relatedArticles"]) assert.equal(field in select, false);
+    return { id: "post-1", slug: "story", title: "Story", excerpt: "Travel tips", contentHtml: "<p>Plan your next journey.</p>",
+      category: null, coverMedia: { visibility: "PRIVATE" }, publishedAt: new Date("2026-01-01"),
+      publicAuthorName: "Old author", publicAuthorBio: "Old biography", tags: [{ tag: { slug: "old", name: "Old tag" } }],
+      relatedArticles: [{ relatedPost: { id: "old-article" } }], seoTitle: null, seoDescription: null,
+      relatedTours: [{ package: { id: "tour", slug: "test-tour", title: "Test tour", summary: "A useful journey", days: 3, nights: 2 } }], isDemo: false };
+  });
+  const detail = await request("/blog/story");
+  assert.equal(detail.status, 200);
+  const article = (await detail.json()).data;
+  assert.equal(article.author, null);
+  assert.deepEqual(article.tags, []);
+  assert.deepEqual(article.relatedArticles, []);
+  assert.equal(article.relatedPackages[0].id, "tour");
+  assert.equal(article.cover, null);
+  assert.match(article.contentHtml, /Plan your next journey/);
 });

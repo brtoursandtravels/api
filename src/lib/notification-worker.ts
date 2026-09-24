@@ -35,6 +35,8 @@ export async function processNextNotification(
 ) {
   const item = await prisma.notificationOutbox.findFirst({
     where: {
+      // Enquiries are handled in admin; only account recovery emails are sent.
+      eventType: "PASSWORD_RESET_REQUESTED",
       status: { in: ["PENDING", "FAILED"] },
       nextAttemptAt: { lte: now },
       ...(onlyId ? { id: onlyId } : {}),

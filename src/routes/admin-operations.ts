@@ -4,7 +4,7 @@ import { z } from "zod";
 import { prisma } from "../database.js";
 import { HttpError } from "../lib/http-error.js";
 import type { Prisma } from "../generated/prisma/client.js";
-import { activityContext, normalizeIpAddress, recordActivity } from "../lib/activity-log.js";
+import { activityContext, normalizeIpAddress } from "../lib/activity-log.js";
 import {
   optionalSession,
   requireAuth,
@@ -29,7 +29,6 @@ adminOperationsRouter.get("/dashboard", async (_request, response) => {
     packageCounts,
     upcomingDepartures,
     enquiryCounts,
-    failedNotifications,
     postCounts,
     dailyEnquiries,
   ] = await Promise.all([
@@ -45,7 +44,6 @@ adminOperationsRouter.get("/dashboard", async (_request, response) => {
       by: ["status"],
       _count: { _all: true },
     }),
-    prisma.notificationOutbox.count({ where: { status: "FAILED" } }),
     prisma.blogPost.groupBy({
       by: ["status"],
       where: { OR: [
@@ -86,7 +84,6 @@ adminOperationsRouter.get("/dashboard", async (_request, response) => {
       publishedPackages,
       upcomingDepartures,
       newEnquiries: enquiryStatusCounts.NEW,
-      failedNotifications,
       draftPosts,
       publishedPosts,
       enquiryStatusCounts,
@@ -320,68 +317,5 @@ adminOperationsRouter.get(
         role: actorRole ?? actor?.role ?? null,
       } : null,
     })), meta: { ...query, total } });
-  },
-);
-
-adminOperationsRouter.get(
-  "/notifications",
-  requireRole("SUPER_ADMIN", "SALES_AGENT"),
-  async (request, response) => {
-    const query = z
-      .object({
-        status: z
-          .enum(["PENDING", "PROCESSING", "SENT", "FAILED", "CANCELLED"])
-          .optional(),
-        page: z.coerce.number().int().min(1).max(10_000).default(1),
-        pageSize: z.coerce.number().int().min(1).max(100).default(25),
-      })
-      .parse(request.query);
-    const where = query.status ? { status: query.status } : {};
-    const [total, records] = await Promise.all([
-      prisma.notificationOutbox.count({ where }),
-      prisma.notificationOutbox.findMany({
-        where,
-        select: {
-          id: true,
-          enquiryId: true,
-          eventType: true,
-          status: true,
-          attempts: true,
-          nextAttemptAt: true,
-          sentAt: true,
-          lastError: true,
-          createdAt: true,
-          updatedAt: true,
-        },
-        orderBy: { createdAt: "desc" },
-        skip: (query.page - 1) * query.pageSize,
-        take: query.pageSize,
-      }),
-    ]);
-    response.json({ data: records, meta: { ...query, total } });
-  },
-);
-
-adminOperationsRouter.post(
-  "/notifications/:id/retry",
-  requireRole("SUPER_ADMIN", "SALES_AGENT"),
-  requireCsrf,
-  async (request, response) => {
-    const id = z.string().max(30).parse(request.params.id);
-    const updated = await prisma.notificationOutbox.updateMany({
-      where: { id, status: "FAILED" },
-      data: { status: "PENDING", nextAttemptAt: new Date(), lockedAt: null },
-    });
-    if (updated.count !== 1) {
-      throw new HttpError(
-        409,
-        "NOTIFICATION_NOT_RETRYABLE",
-        "Only failed notifications can be retried.",
-      );
-    }
-    await recordActivity(prisma, request, response, "NOTIFICATION_RETRIED", "NotificationOutbox", id, {
-      before: { status: "FAILED" }, after: { status: "PENDING" },
-    });
-    response.status(202).json({ data: { id, status: "PENDING" } });
   },
 );

@@ -35,7 +35,8 @@
     "notifications:work": "tsx src/worker.ts",
     "env:check": "tsx scripts/check-env.ts",
     "postinstall": "prisma generate",
-    "prestart": "npm run db:prepare:deploy"
+    "prestart": "npm run db:prepare:deploy",
+    "test:inquiries": "tsx --test src/routes/inquiries.test.ts"
   },
   "dependencies": {
     "@prisma/adapter-mariadb": "7.10.0",

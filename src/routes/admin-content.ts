@@ -7,6 +7,7 @@ import { HttpError } from "../lib/http-error.js";
 import { activityContext } from "../lib/activity-log.js";
 import { sanitizeRichText } from "../lib/rich-text.js";
 import { socialLinksSchema, socialUrlSchema } from "../lib/social-links.js";
+import { publicSettingValueSchema } from "../lib/public-settings.js";
 import { pageSeoKeySchema, pageSeoSchema, staticSeoPages } from "../lib/page-seo.js";
 import {
   optionalSession,
@@ -261,9 +262,9 @@ const blogPostSchema = publicationSchema
     publicAuthorBio: z.string().trim().max(1000).nullable().optional(),
     seoTitle: z.string().trim().max(70).nullable().optional(),
     seoDescription: z.string().trim().max(170).nullable().optional(),
-    tagIds: z.array(z.string().max(30)).max(30).default([]),
+    tagIds: z.array(z.string().max(30)).max(30).optional(),
     relatedPackageIds: z.array(z.string().max(30)).max(30).default([]),
-    relatedPostIds: z.array(z.string().max(30)).max(12).default([]),
+    relatedPostIds: z.array(z.string().max(30)).max(12).optional(),
     isFeatured: z.boolean().default(false),
   })
   .strict();
@@ -286,7 +287,19 @@ const adminBlogInclude = {
   },
 } satisfies Prisma.BlogPostInclude;
 
-adminContentRouter.get("/blog/posts", async (_request, response) => {
+adminContentRouter.get("/blog/posts", async (request, response) => {
+  if (request.query.view === "summary") {
+    const records = await prisma.blogPost.findMany({
+      select: {
+        id: true, slug: true, title: true, excerpt: true, status: true,
+        publishedAt: true, updatedAt: true,
+        coverMedia: { select: { id: true, altText: true, visibility: true } },
+      },
+      orderBy: { updatedAt: "desc" },
+    });
+    response.json({ data: records });
+    return;
+  }
   const records = await prisma.blogPost.findMany({
     include: adminBlogInclude,
     orderBy: { updatedAt: "desc" },
@@ -294,11 +307,18 @@ adminContentRouter.get("/blog/posts", async (_request, response) => {
   response.json({ data: records });
 });
 
+adminContentRouter.get("/blog/posts/:id", async (request, response) => {
+  const id = z.string().max(30).parse(request.params.id);
+  const record = await prisma.blogPost.findUnique({ where: { id }, include: adminBlogInclude });
+  if (!record) throw new HttpError(404, "BLOG_POST_NOT_FOUND", "The article was not found.");
+  response.json({ data: record });
+});
+
 async function verifyBlogRelations(
   input: z.infer<typeof blogPostSchema>,
   currentId?: string,
 ) {
-  if (currentId && input.relatedPostIds.includes(currentId))
+  if (currentId && input.relatedPostIds?.includes(currentId))
     throw new HttpError(
       400,
       "RELATED_POST_INVALID",
@@ -315,9 +335,9 @@ async function verifyBlogRelations(
           where: { id: input.coverMediaId, mimeType: { startsWith: "image/" } },
         })
       : 0,
-    input.tagIds.length ? prisma.tag.count({ where: { id: { in: input.tagIds } } }) : 0,
+    input.tagIds?.length ? prisma.tag.count({ where: { id: { in: input.tagIds } } }) : 0,
     input.relatedPackageIds.length ? prisma.package.count({ where: { id: { in: input.relatedPackageIds } } }) : 0,
-    input.relatedPostIds.length ? prisma.blogPost.count({
+    input.relatedPostIds?.length ? prisma.blogPost.count({
       where: { id: { in: input.relatedPostIds }, status: { not: "ARCHIVED" } },
     }) : 0,
   ]);
@@ -358,8 +378,10 @@ function blogScalar(input: z.infer<typeof blogPostSchema>, authorId: string) {
     categoryId: input.categoryId ?? null,
     coverMediaId: input.coverMediaId ?? null,
     authorId,
-    publicAuthorName: input.publicAuthorName ?? null,
-    publicAuthorBio: input.publicAuthorBio ?? null,
+    // Retired public fields may be omitted by the simplified editor. Preserve
+    // existing values for compatibility without exposing them on the public site.
+    ...(input.publicAuthorName !== undefined ? { publicAuthorName: input.publicAuthorName } : {}),
+    ...(input.publicAuthorBio !== undefined ? { publicAuthorBio: input.publicAuthorBio } : {}),
     seoTitle: input.seoTitle ?? null,
     seoDescription: input.seoDescription ?? null,
     isFeatured: input.isFeatured,
@@ -377,7 +399,7 @@ adminContentRouter.post(
       const created = await transaction.blogPost.create({
         data: blogScalar(input, request.auth!.user.id),
       });
-      if (input.tagIds.length)
+      if (input.tagIds?.length)
         await transaction.blogPostTag.createMany({
           data: input.tagIds.map((tagId) => ({ postId: created.id, tagId })),
         });
@@ -388,7 +410,7 @@ adminContentRouter.post(
             packageId,
           })),
         });
-      if (input.relatedPostIds.length)
+      if (input.relatedPostIds?.length)
         await transaction.blogPostRelated.createMany({
           data: input.relatedPostIds.map((relatedPostId) => ({
             postId: created.id,
@@ -432,10 +454,10 @@ adminContentRouter.put(
         where: { id },
         data: blogScalar(input, request.auth!.user.id),
       });
-      await transaction.blogPostTag.deleteMany({ where: { postId: id } });
+      if (input.tagIds !== undefined) await transaction.blogPostTag.deleteMany({ where: { postId: id } });
       await transaction.blogPostPackage.deleteMany({ where: { postId: id } });
-      await transaction.blogPostRelated.deleteMany({ where: { postId: id } });
-      if (input.tagIds.length)
+      if (input.relatedPostIds !== undefined) await transaction.blogPostRelated.deleteMany({ where: { postId: id } });
+      if (input.tagIds?.length)
         await transaction.blogPostTag.createMany({
           data: input.tagIds.map((tagId) => ({ postId: id, tagId })),
         });
@@ -446,7 +468,7 @@ adminContentRouter.put(
             packageId,
           })),
         });
-      if (input.relatedPostIds.length)
+      if (input.relatedPostIds?.length)
         await transaction.blogPostRelated.createMany({
           data: input.relatedPostIds.map((relatedPostId) => ({
             postId: id,
@@ -838,6 +860,8 @@ adminContentRouter.put(
       .regex(/^[a-z0-9._-]+$/i)
       .parse(request.params.key);
     const input = settingSchema.parse(request.body);
+    const publicValueSchema = publicSettingValueSchema(key);
+    if (publicValueSchema) input.value = publicValueSchema.parse(input.value);
     if (key.startsWith("seo.pages.")) {
       pageSeoKeySchema.parse(key);
       input.value = pageSeoSchema.parse(input.value);

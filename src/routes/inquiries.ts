@@ -26,7 +26,7 @@ const dateSchema = z
 
 const inquirySchema = z
   .object({
-    type: z.enum(["CONTACT", "PACKAGE_ENQUIRY", "BOOKING_REQUEST"]),
+    type: z.enum(["CONTACT", "NEWSLETTER", "PACKAGE_ENQUIRY", "BOOKING_REQUEST"]),
     name: z.string().trim().min(2).max(120),
     email: z.string().trim().toLowerCase().email().max(254),
     phone: z
@@ -35,6 +35,7 @@ const inquirySchema = z
       .min(7)
       .max(40)
       .regex(/^[+()\d\s-]+$/)
+      .refine(value => /^\d{7,15}$/.test(value.replace(/\D/g, "")), "Enter a valid phone number.")
       .optional(),
     subject: z.string().trim().min(2).max(200).optional(),
     message: z.string().trim().min(10).max(5000),
@@ -63,7 +64,10 @@ const inquirySchema = z
   })
   .strict()
   .superRefine((value, context) => {
-    if (value.type !== "CONTACT" && !value.packageSlug) {
+    if (value.type === "CONTACT" && !value.phone) {
+      context.addIssue({ code: "custom", path: ["phone"], message: "Enter your phone number." });
+    }
+    if ((value.type === "PACKAGE_ENQUIRY" || value.type === "BOOKING_REQUEST") && !value.packageSlug) {
       context.addIssue({
         code: "custom",
         path: ["packageSlug"],
@@ -104,6 +108,11 @@ inquiriesRouter.post(
       .max(128)
       .parse(request.header("idempotency-key"));
     const input = inquirySchema.parse(request.body);
+    if (input.type === "NEWSLETTER") {
+      input.name = "Newsletter subscriber";
+      input.subject = "Travel journal updates";
+      input.message = "Please contact me about BR travel journal updates.";
+    }
     const now = new Date();
     const packageRecord = input.packageSlug
       ? await prisma.package.findFirst({
@@ -163,12 +172,11 @@ inquiriesRouter.post(
       return;
     }
 
-    const type = input.type === "CONTACT" ? "GENERAL" : input.type;
+    const type = input.type === "CONTACT" || input.type === "NEWSLETTER" ? "GENERAL" : input.type;
     const partySize =
       input.adultCount === undefined && input.childCount === undefined
         ? undefined
         : (input.adultCount ?? 0) + (input.childCount ?? 0);
-    const notificationTo = env.STAFF_NOTIFICATION_EMAIL ?? env.SMTP_FROM;
 
     try {
       const enquiry = await prisma.$transaction(async (transaction) => {
@@ -206,17 +214,6 @@ inquiriesRouter.post(
             enquiryId: created.id,
             toStatus: "NEW",
             reason: "Public submission received",
-          },
-        });
-        await transaction.notificationOutbox.create({
-          data: {
-            enquiryId: created.id,
-            eventType: "ENQUIRY_RECEIVED",
-            payload: {
-              to: notificationTo,
-              subject: `New BR Tours request ${created.publicReference}`,
-              text: `A new ${input.type.toLowerCase().replaceAll("_", " ")} was received.\nReference: ${created.publicReference}\nName: ${input.name}\nEmail: ${input.email}\nPackage: ${packageRecord?.title ?? "General contact"}\n\nReview the request in the secure admin panel.`,
-            },
           },
         });
         return created;
@@ -298,19 +295,6 @@ const adminEnquiryInclude = {
     orderBy: { createdAt: "asc" as const },
     include: { changedBy: { select: { id: true, displayName: true } } },
   },
-  notifications: {
-    orderBy: { createdAt: "desc" as const },
-    select: {
-      id: true,
-      eventType: true,
-      status: true,
-      attempts: true,
-      nextAttemptAt: true,
-      sentAt: true,
-      lastError: true,
-      createdAt: true,
-    },
-  },
 } satisfies Prisma.EnquiryInclude;
 
 const transitions: Record<EnquiryStatus, EnquiryStatus[]> = {
@@ -329,9 +313,8 @@ adminInquiriesRouter.use(
   requireRole("SUPER_ADMIN", "SALES_AGENT"),
 );
 
-adminInquiriesRouter.get("/", async (request, response) => {
-  const query = listQuerySchema.parse(request.query);
-  const where: Prisma.EnquiryWhereInput = {
+function enquiryFilters(query: z.infer<typeof listQuerySchema>): Prisma.EnquiryWhereInput {
+  return {
     ...(query.status ? { status: query.status } : {}),
     ...(query.type
       ? { type: query.type === "CONTACT" ? "GENERAL" : query.type }
@@ -348,9 +331,9 @@ adminInquiriesRouter.get("/", async (request, response) => {
       ? {
           createdAt: {
             ...(query.from
-              ? { gte: new Date(`${query.from}T00:00:00.000Z`) }
+              ? { gte: new Date(`${query.from}T00:00:00.000+05:30`) }
               : {}),
-            ...(query.to ? { lte: new Date(`${query.to}T23:59:59.999Z`) } : {}),
+            ...(query.to ? { lte: new Date(`${query.to}T23:59:59.999+05:30`) } : {}),
           },
         }
       : {}),
@@ -362,6 +345,7 @@ adminInquiriesRouter.get("/", async (request, response) => {
                 { publicReference: { contains: query.q } },
                 { name: { contains: query.q } },
                 { email: { contains: query.q } },
+                { phone: { contains: query.q } },
                 { packageTitleSnapshot: { contains: query.q } },
               ],
             },
@@ -369,6 +353,11 @@ adminInquiriesRouter.get("/", async (request, response) => {
         }
       : {}),
   };
+}
+
+adminInquiriesRouter.get("/", async (request, response) => {
+  const query = listQuerySchema.parse(request.query);
+  const where = enquiryFilters(query);
   const [total, records] = await Promise.all([
     prisma.enquiry.count({ where }),
     prisma.enquiry.findMany({
@@ -389,8 +378,10 @@ adminInquiriesRouter.get("/", async (request, response) => {
   });
 });
 
-adminInquiriesRouter.get("/export.csv", async (_request, response) => {
+adminInquiriesRouter.get("/export.csv", async (request, response) => {
+  const query = listQuerySchema.parse(request.query);
   const records = await prisma.enquiry.findMany({
+    where: enquiryFilters(query),
     orderBy: { createdAt: "desc" },
     take: 10_000,
   });
@@ -457,12 +448,6 @@ adminInquiriesRouter.get("/:id", async (request, response) => {
       })),
       statusHistory: record.statusHistory.map((item) => ({
         ...item,
-        createdAt: item.createdAt.toISOString(),
-      })),
-      delivery: record.notifications.map((item) => ({
-        ...item,
-        nextAttemptAt: item.nextAttemptAt.toISOString(),
-        sentAt: item.sentAt?.toISOString() ?? null,
         createdAt: item.createdAt.toISOString(),
       })),
     },

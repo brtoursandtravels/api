@@ -59,7 +59,7 @@ beforeEach(() => {
   stub(prisma.package, "groupBy", async () => []);
   stub(prisma.departure, "count", async () => 0);
   stub(prisma.enquiry, "groupBy", async () => []);
-  stub(prisma.notificationOutbox, "count", async () => 0);
+  stub(prisma.notificationOutbox, "count", async () => { throw new Error("Dashboard must not read removed notifications"); });
   stub(prisma.blogPost, "groupBy", async () => []);
   stub(prisma, "$queryRaw", async () => []);
 });
@@ -82,7 +82,7 @@ test("an empty dashboard has zero counts and exactly fourteen UTC dates", async 
   assert.equal(response.status, 200);
   assert.equal(response.headers.get("cache-control"), "private, no-store");
   const { data } = await response.json();
-  for (const key of ["packages", "publishedPackages", "upcomingDepartures", "newEnquiries", "failedNotifications", "draftPosts", "publishedPosts"]) {
+  for (const key of ["packages", "publishedPackages", "upcomingDepartures", "newEnquiries", "draftPosts", "publishedPosts"]) {
     assert.equal(data[key], 0);
   }
   assert.deepEqual(data.enquiryStatusCounts, { NEW: 0, CONTACTED: 0, QUOTED: 0, CONFIRMED: 0, CLOSED: 0, LOST: 0 });
@@ -108,10 +108,6 @@ test("grouped counts preserve publication rules, statuses and zero-filled trends
     { status: "NEW", _count: { _all: 8 } }, { status: "CONFIRMED", _count: { _all: 3 } },
     { status: "LOST", _count: { _all: 1 } },
   ]);
-  stub(prisma.notificationOutbox, "count", async ({ where }: { where: unknown }) => {
-    assert.deepEqual(where, { status: "FAILED" });
-    return 2;
-  });
   stub(prisma.blogPost, "groupBy", async ({ where }: { where: { OR: unknown[] } }) => {
     assert.deepEqual(where.OR[0], { status: "DRAFT" });
     const published = where.OR[1] as { status: string; publishedAt: { lte: Date } };
@@ -131,7 +127,7 @@ test("grouped counts preserve publication rules, statuses and zero-filled trends
   const { data } = await response.json();
   assert.deepEqual({ ...data, enquiryTrend: undefined, generatedAt: undefined }, {
     packages: 9, publishedPackages: 7, upcomingDepartures: 4, newEnquiries: 8,
-    failedNotifications: 2, draftPosts: 5, publishedPosts: 6,
+    draftPosts: 5, publishedPosts: 6,
     enquiryStatusCounts: { NEW: 8, CONTACTED: 0, QUOTED: 0, CONFIRMED: 3, CLOSED: 0, LOST: 1 },
     enquiryTrend: undefined, generatedAt: undefined,
   });

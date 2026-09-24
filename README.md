@@ -47,7 +47,7 @@ host-managed MySQL and Nginx as documented in `docs/DEPLOYMENT.md`.
 - npm run db:migrate:deploy — apply reviewed migrations in production.
 - npm run db:seed:demo — guarded, idempotent non-production demo seed.
 - npm run admin:create — interactive Argon2id admin bootstrap.
-- npm run notifications:work — durable SMTP outbox worker.
+- npm run notifications:work — SMTP outbox worker for password reset emails. Enquiries are handled in admin without staff email alerts.
 - npm run lint, npm run typecheck and npm run build — quality gates.
 
 The administration API also provides self-profile/password operations, safe

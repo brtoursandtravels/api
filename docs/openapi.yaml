@@ -629,26 +629,6 @@ paths:
         "400": { description: Invalid filter or pagination }
         "401": { description: Authentication required }
         "403": { description: Super Admin role required }
-  /admin/notifications:
-    get:
-      {
-        tags: [Admin operations],
-        security: [{ cookieAuth: [] }],
-        responses: { "200": { description: Redacted outbox delivery state } },
-      }
-  /admin/notifications/{id}/retry:
-    post:
-      {
-        tags: [Admin operations],
-        security: [{ cookieAuth: [] }],
-        parameters:
-          [
-            { $ref: "#/components/parameters/Id" },
-            { $ref: "#/components/parameters/CsrfToken" },
-          ],
-        responses:
-          { "202": { description: Failed notification queued for retry } },
-      }
   /admin/pages:
     get:
       {
@@ -1079,12 +1059,16 @@ components:
       type: object
       additionalProperties: false
       required: [type, name, email, message, privacyAccepted, policyVersion]
+      description: Contact requests require a phone number. NEWSLETTER requests are email-only and saved as general enquiries for staff review; no email alert is queued.
+      allOf:
+        - if: { properties: { type: { const: CONTACT } } }
+          then: { required: [phone] }
       properties:
         type:
-          { type: string, enum: [CONTACT, PACKAGE_ENQUIRY, BOOKING_REQUEST] }
+          { type: string, enum: [CONTACT, NEWSLETTER, PACKAGE_ENQUIRY, BOOKING_REQUEST] }
         name: { type: string, minLength: 2, maxLength: 120 }
         email: { type: string, format: email, maxLength: 254 }
-        phone: { type: string, maxLength: 40 }
+        phone: { type: string, minLength: 7, maxLength: 40, description: "7 to 15 digits; spaces, plus, brackets and hyphens are accepted" }
         subject: { type: string, maxLength: 200 }
         message: { type: string, minLength: 10, maxLength: 5000 }
         packageSlug: { type: string, maxLength: 180 }

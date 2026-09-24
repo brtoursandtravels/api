@@ -148,3 +148,35 @@ test("Page SEO lists fixed routes and saves metadata as public settings", async 
     Object.defineProperty(prisma.auditLog, "create", { value: originals.audit, configurable: true, writable: true });
   }
 });
+
+test("contact settings save plain text, retain access checks and reject invalid values", async () => {
+  const originals = { upsert: prisma.setting.upsert, audit: prisma.auditLog.create };
+  const writes: unknown[] = [];
+  Object.defineProperty(prisma.setting, "upsert", { configurable: true, writable: true, value: async (args: { create: unknown }) => { writes.push(args.create); return args.create; } });
+  Object.defineProperty(prisma.auditLog, "create", { configurable: true, writable: true, value: async () => ({}) });
+  try {
+    const path = "/admin/settings/contact.email";
+    const body = { value: " test@example.com ", isPublic: true, description: "Email address" };
+    assert.equal((await request(body, "", undefined, path)).status, 401);
+    assert.equal((await request(body, "SALES_AGENT", undefined, path)).status, 403);
+    assert.equal((await request(body, "CONTENT_EDITOR", "invalid", path)).status, 403);
+    for (const [key, value] of [
+      ["contact.email", "invalid"], ["contact.email", { value: "test@example.com" }],
+      ["contact.phone", "123"], ["contact.phone", "javascript:123456789"],
+      ["contact.whatsapp", "https://evil.test/123456789"], ["contact.whatsapp", "https://wa.me/abc"],
+      ["contact.whatsapp", "https://user:password@wa.me/123456789"],
+      ["contact.mapUrl", "javascript:alert(1)"], ["contact.address", "a".repeat(1001)],
+    ]) assert.equal((await request({ value, isPublic: true }, "CONTENT_EDITOR", undefined, `/admin/settings/${key}`)).status, 400);
+    assert.equal(writes.length, 0);
+    assert.equal((await request(body, "CONTENT_EDITOR", undefined, path)).status, 200);
+    assert.deepEqual(writes[0], { key: "contact.email", value: "test@example.com", isPublic: true, description: "Email address" });
+    for (const [key, value] of [
+      ["contact.email", ""], ["contact.phone", "+91 79907 21001"], ["contact.whatsapp", "+91 79907 21001"],
+      ["contact.whatsapp", "https://wa.me/917990721001/"], ["contact.whatsapp", "https://api.whatsapp.com/send?phone=917990721001"],
+      ["contact.address", "Office address"], ["contact.openingHours", "Monday to Friday"], ["contact.mapUrl", "https://maps.google.com/?q=Ahmedabad"],
+    ]) assert.equal((await request({ value, isPublic: true }, "CONTENT_EDITOR", undefined, `/admin/settings/${key}`)).status, 200);
+  } finally {
+    Object.defineProperty(prisma.setting, "upsert", { value: originals.upsert, configurable: true, writable: true });
+    Object.defineProperty(prisma.auditLog, "create", { value: originals.audit, configurable: true, writable: true });
+  }
+});

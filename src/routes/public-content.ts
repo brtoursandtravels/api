@@ -289,7 +289,7 @@ publicContentRouter.get("/blog", publicReadCache, async (request, response) => {
       where,
       select: {
         id: true, slug: true, title: true, excerpt: true, contentHtml: true,
-        publishedAt: true, publicAuthorName: true, isDemo: true,
+        publishedAt: true, isDemo: true,
         category: { select: { slug: true, name: true } },
         coverMedia: { select: publicMediaSelect },
         relatedTours: {
@@ -320,9 +320,7 @@ publicContentRouter.get("/blog", publicReadCache, async (request, response) => {
           : null,
       publishedAt: record.publishedAt!.toISOString(),
       readingMinutes: readingMinutes(record.contentHtml),
-      author: record.publicAuthorName
-        ? { name: record.publicAuthorName }
-        : null,
+      author: null,
       relatedTour: record.relatedTours[0]?.package ?? null,
       isDemo: record.isDemo,
     })),
@@ -337,22 +335,9 @@ publicContentRouter.get("/blog/:slug", publicEditableContentCache, async (reques
     where: { slug, ...published(now) },
     select: {
       id: true, slug: true, title: true, excerpt: true, contentHtml: true, publishedAt: true,
-      publicAuthorName: true, publicAuthorBio: true, seoTitle: true, seoDescription: true, isDemo: true,
+      seoTitle: true, seoDescription: true, isDemo: true,
       category: { select: { slug: true, name: true } },
       coverMedia: { select: publicMediaSelect },
-      tags: { select: { tag: { select: { slug: true, name: true } } } },
-      relatedArticles: {
-        where: { relatedPost: { is: published(now) } },
-        select: {
-          relatedPost: {
-            select: {
-              id: true, slug: true, title: true, excerpt: true, publishedAt: true,
-              category: { select: { slug: true, name: true } },
-              coverMedia: { select: publicMediaSelect },
-            },
-          },
-        },
-      },
       relatedTours: {
         where: { package: { is: published(now) } },
         select: {
@@ -384,29 +369,17 @@ publicContentRouter.get("/blog/:slug", publicEditableContentCache, async (reques
       excerpt: record.excerpt,
       contentHtml: sanitizeRichText(record.contentHtml),
       category: record.category,
-      tags: record.tags.map(({ tag }) => tag),
+      // Empty compatibility fields keep older cached pages safe during rollout.
+      tags: [],
       cover:
         record.coverMedia?.visibility === "PUBLIC"
           ? mediaDto(record.coverMedia)
           : null,
       publishedAt: record.publishedAt!.toISOString(),
       readingMinutes: readingMinutes(record.contentHtml),
-      author: record.publicAuthorName
-        ? { name: record.publicAuthorName, bio: record.publicAuthorBio }
-        : null,
+      author: null,
       seo: { title: record.seoTitle, description: record.seoDescription },
-      relatedArticles: record.relatedArticles.map(({ relatedPost }) => ({
-        id: relatedPost.id,
-        slug: relatedPost.slug,
-        title: relatedPost.title,
-        excerpt: relatedPost.excerpt,
-        category: relatedPost.category,
-        cover:
-          relatedPost.coverMedia?.visibility === "PUBLIC"
-            ? mediaDto(relatedPost.coverMedia)
-            : null,
-        publishedAt: relatedPost.publishedAt!.toISOString(),
-      })),
+      relatedArticles: [],
       relatedPackages: record.relatedTours.map(
         ({ package: relatedPackage }) => relatedPackage,
       ),
