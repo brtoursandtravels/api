@@ -97,14 +97,16 @@ const userCreateSchema = z
   .object({
     email: z.string().trim().toLowerCase().email().max(254),
     displayName: z.string().trim().min(2).max(120),
-    role: z.enum(["SUPER_ADMIN", "CONTENT_EDITOR", "SALES_AGENT"]),
+    role: z.enum(["SUPER_ADMIN", "CONTENT_EDITOR", "SALES_AGENT"]).default("CONTENT_EDITOR"),
     password: z.string().min(14).max(128),
   })
   .strict();
 const userUpdateSchema = z
   .object({
     displayName: z.string().trim().min(2).max(120),
-    role: z.enum(["SUPER_ADMIN", "CONTENT_EDITOR", "SALES_AGENT"]),
+    email: z.string().trim().toLowerCase().email().max(254).optional(),
+    password: z.string().min(14).max(128).optional(),
+    role: z.enum(["SUPER_ADMIN", "CONTENT_EDITOR", "SALES_AGENT"]).optional(),
     status: z.enum(["ACTIVE", "DISABLED"]),
   })
   .strict();
@@ -203,10 +205,12 @@ adminOperationsRouter.put(
         "ADMIN_USER_NOT_FOUND",
         "The admin user was not found.",
       );
+    const role = input.role ?? current.role;
+    const email = input.email ?? current.email;
     const removesActiveSuper =
       current.role === "SUPER_ADMIN" &&
       current.status === "ACTIVE" &&
-      (input.role !== "SUPER_ADMIN" || input.status !== "ACTIVE");
+      (role !== "SUPER_ADMIN" || input.status !== "ACTIVE");
     if (removesActiveSuper) {
       const activeSuperAdmins = await prisma.adminUser.count({
         where: { role: "SUPER_ADMIN", status: "ACTIVE" },
@@ -219,12 +223,17 @@ adminOperationsRouter.put(
         );
       }
     }
+    const passwordHash = input.password
+      ? await argon2.hash(input.password, { type: argon2.argon2id })
+      : undefined;
     const record = await prisma.$transaction(async (transaction) => {
       const updated = await transaction.adminUser.update({
         where: { id },
         data: {
           displayName: input.displayName,
-          role: input.role,
+          email,
+          ...(passwordHash ? { passwordHash } : {}),
+          role,
           status: input.status,
         },
         select: {
@@ -236,8 +245,11 @@ adminOperationsRouter.put(
           updatedAt: true,
         },
       });
-      if (current.role !== input.role || input.status === "DISABLED") {
+      if (passwordHash || current.email !== email || current.role !== role || input.status === "DISABLED") {
         await transaction.session.deleteMany({ where: { userId: id } });
+      }
+      if (passwordHash || current.email !== email) {
+        await transaction.passwordResetToken.deleteMany({ where: { userId: id } });
       }
       await transaction.auditLog.create({
         data: {
@@ -246,14 +258,17 @@ adminOperationsRouter.put(
           entityType: "AdminUser",
           entityId: id,
           before: {
+            email: current.email,
             displayName: current.displayName,
             role: current.role,
             status: current.status,
           },
           after: {
+            email,
             displayName: input.displayName,
-            role: input.role,
+            role,
             status: input.status,
+            passwordChanged: Boolean(passwordHash),
           },
           ...activityContext(request, response),
         },

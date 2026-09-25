@@ -112,6 +112,37 @@ test("site settings do not query dynamic navigation or require a transaction", a
   assert.equal(response.headers.get("cache-control"), "public, max-age=0, s-maxage=30, must-revalidate");
 });
 
+test("testimonials return every approved published real story in display order", async () => {
+  const records = Array.from({ length: 9 }, (_, index) => ({
+    id: `story-${index + 1}`,
+    publicName: `Traveller ${index + 1}`,
+    location: "Ahmedabad",
+    tripName: `Journey ${index + 1}`,
+    quote: `A memorable journey number ${index + 1}.`,
+    rating: 5,
+    sortOrder: index,
+    isDemo: false,
+  }));
+  stub(prisma.testimonial, "findMany", async ({ where, orderBy }: {
+    where: { status: string; publishedAt: { not: null; lte: Date }; approved: boolean; isDemo: boolean };
+    orderBy: { sortOrder: string };
+  }) => {
+    assert.equal(where.status, "PUBLISHED");
+    assert.equal(where.approved, true);
+    assert.equal(where.isDemo, false);
+    assert.equal(where.publishedAt.not, null);
+    assert.ok(where.publishedAt.lte instanceof Date);
+    assert.deepEqual(orderBy, { sortOrder: "asc" });
+    return records;
+  });
+  const response = await request("/testimonials");
+  assert.equal(response.status, 200);
+  const body = await response.json();
+  assert.equal(body.data.length, 9);
+  assert.deepEqual(body.data.map((item: { publicName: string }) => item.publicName), records.map(item => item.publicName));
+  assert.equal(transactionCalls, 0);
+});
+
 test("concurrent public page reads never acquire a database transaction", async () => {
   for (const delegate of [prisma.package, prisma.galleryAlbum, prisma.blogPost]) {
     stub(delegate, "count", async () => 0);

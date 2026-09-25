@@ -416,12 +416,6 @@ publicContentRouter.get("/faqs", publicReadCache, async (request, response) => {
   });
 });
 
-const publishedSampleTestimonialIds = [
-  "demo-testimonial-kashmir",
-  "demo-testimonial-chardham",
-  "demo-testimonial-rajasthan",
-];
-
 publicContentRouter.get("/testimonials", publicReadCache, async (_request, response) => {
   const now = new Date();
   const records = await prisma.testimonial.findMany({
@@ -430,14 +424,7 @@ publicContentRouter.get("/testimonials", publicReadCache, async (_request, respo
       status: "PUBLISHED",
       publishedAt: { not: null, lte: now },
       approved: true,
-      ...(env.DEMO_MODE
-        ? {}
-        : {
-            OR: [
-              { isDemo: false },
-              { id: { in: publishedSampleTestimonialIds } },
-            ],
-          }),
+      isDemo: false,
     },
     orderBy: { sortOrder: "asc" },
   });

@@ -720,16 +720,17 @@ const testimonialSchema = publicationSchema
     quote: z.string().trim().min(10).max(5000),
     rating: z.number().int().min(1).max(5).default(5),
     consentNotes: z.string().trim().max(5000).nullable().optional(),
-    approved: z.boolean().default(false),
+    // Accepted for older clients; publishing is now the single approval action.
+    approved: z.boolean().optional(),
     sortOrder: z.number().int().min(0).max(10_000).default(0),
   })
   .strict()
   .superRefine((value, context) => {
-    if (value.approved && !value.consentNotes)
+    if (value.status === "PUBLISHED" && !value.consentNotes)
       context.addIssue({
         code: "custom",
         path: ["consentNotes"],
-        message: "Record consent before approval.",
+        message: "Record the traveller's permission before publishing.",
       });
   });
 adminContentRouter.get("/testimonials", async (_request, response) =>
@@ -750,7 +751,7 @@ adminContentRouter.post(
         quote: input.quote,
         rating: input.rating,
         consentNotes: input.consentNotes ?? null,
-        approved: input.approved,
+        approved: input.status === "PUBLISHED",
         sortOrder: input.sortOrder,
         ...publicationData(input),
       },
@@ -773,7 +774,7 @@ adminContentRouter.put(
           quote: input.quote,
           rating: input.rating,
           consentNotes: input.consentNotes ?? null,
-          approved: input.approved,
+          approved: input.status === "PUBLISHED",
           sortOrder: input.sortOrder,
           ...publicationData(input),
         },
