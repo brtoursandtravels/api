@@ -5,8 +5,8 @@ Do not launch until each applicable item has an owner and evidence.
 ## Business and content
 
 - [ ] Confirm the public domain, organization description and service regions.
-- [ ] Replace demo packages/prices/departures with reviewed offers; keep
-      `DEMO_MODE=false` and `ALLOW_DEMO_SEED=false`.
+- [ ] Replace demo packages/prices/departures with reviewed offers; leave demo
+      mode and demo seeding disabled (both default to false).
 - [ ] Publish only licensed media with accurate alt text, captions and rights
       records. Obtain testimonial wording and consent before approval.
 - [ ] Have privacy, terms, cancellation, retention and booking language reviewed.

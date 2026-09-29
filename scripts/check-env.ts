@@ -22,9 +22,9 @@ if (missing.length > 0) {
   process.exitCode = 1;
 } else if (
   process.env.NODE_ENV === "production" &&
-  process.env.DEMO_MODE !== "false"
+  (process.env.DEMO_MODE === "true" || process.env.ALLOW_DEMO_SEED === "true")
 ) {
-  console.error("Production requires DEMO_MODE=false.");
+  console.error("Production cannot enable demo mode or demo seeding.");
   process.exitCode = 1;
 } else {
   console.log(

@@ -69,6 +69,7 @@ authRouter.get("/csrf", (request, response) => {
       csrfToken: token,
       authenticated: Boolean(request.auth),
       user: request.auth ? publicUser(request.auth.user) : null,
+      publicSiteUrl: env.PUBLIC_SITE_URL,
     },
   });
 });

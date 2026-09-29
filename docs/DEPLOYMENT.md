@@ -28,7 +28,9 @@ Store production secrets outside Git. The examples below use:
 
 Make these files readable only by the deployment account. The API environment
 must provide the database, session, origin, media and SMTP values validated by
-`src/env.ts`. Keep `DEMO_MODE=false` and `ALLOW_DEMO_SEED=false` in production.
+`src/env.ts`. Demo mode and demo seeding default to false and may be omitted.
+Set `NODE_ENV=production` in the host service environment so production cookie
+and security settings are enabled.
 
 ## Install, build and migrate
 
@@ -40,7 +42,7 @@ npm ci
 set -a
 . /etc/br-tours/api.env
 set +a
-npm run env:check
+NODE_ENV=production npm run env:check
 npm run build
 npx prisma migrate status
 npm run db:migrate:deploy
@@ -173,6 +175,7 @@ Type=simple
 User=brtours
 Group=brtours
 WorkingDirectory=/srv/br-tours/tours_and_travels_api
+Environment=NODE_ENV=production
 EnvironmentFile=/etc/br-tours/api.env
 ExecStart=/usr/bin/npm start
 Restart=on-failure

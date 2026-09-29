@@ -165,6 +165,7 @@ test("session restoration returns a safe user and valid CSRF token in one privat
   assert.equal(response.headers.get("cache-control"), "no-store");
   const { data } = await response.json();
   assert.equal(data.authenticated, true);
+  assert.equal(data.publicSiteUrl, "http://localhost");
   assert.deepEqual(data.user, { id: "test-user", email: "admin@example.com", displayName: "Test Admin", role: "SUPER_ADMIN" });
   assert.equal(verifySessionCsrfToken("test-session", data.csrfToken), true);
   const anonymous = await (await read("/auth/csrf", false)).json();
