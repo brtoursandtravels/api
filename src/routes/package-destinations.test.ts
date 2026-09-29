@@ -9,7 +9,7 @@ import { destinationNamesSchema, destinationSlug } from "../lib/package-destinat
 // Tests use only in-memory delegates; no real database is read or written.
 Object.assign(process.env, {
   NODE_ENV: "test", DATABASE_URL: "mysql://test:test@127.0.0.1:1/destination_tests",
-  PUBLIC_SITE_URL: "http://localhost", CORS_ALLOWED_ORIGINS: "http://localhost",
+  PUBLIC_SITE_URL: "http://localhost",
   SESSION_SECRET: "package-destinations-test-only-".repeat(8), SMTP_HOST: "localhost",
   SMTP_PORT: "1025", SMTP_FROM: "test@example.com",
 });

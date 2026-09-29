@@ -23,7 +23,7 @@
 ## Phase 2 — secure backend
 
 - [x] Opaque MySQL sessions, Argon2id login, rotation/revocation and safe cookies.
-- [x] Pre-auth and session-bound CSRF with origin checks.
+- [x] Pre-auth and session-bound CSRF for same-origin browser clients.
 - [x] MySQL-backed login, public-form and media-upload rate limits.
 - [x] Super Admin, Content Editor and Sales Agent authorization in Express.
 - [x] Last-active-Super-Admin protection and expiring single-use reset tokens.

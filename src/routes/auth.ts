@@ -16,7 +16,6 @@ import {
 } from "../lib/security.js";
 import {
   optionalSession,
-  requireAllowedOrigin,
   requireAuth,
   requireCsrf,
 } from "../middleware/auth.js";
@@ -76,7 +75,6 @@ authRouter.get("/csrf", (request, response) => {
 
 authRouter.post(
   "/login",
-  requireAllowedOrigin,
   requireCsrf,
   mysqlRateLimit({
     scope: "auth-login",
@@ -158,7 +156,6 @@ authRouter.post(
 authRouter.post(
   "/logout",
   requireAuth,
-  requireAllowedOrigin,
   requireCsrf,
   async (request, response) => {
     await prisma.$transaction([
@@ -185,7 +182,6 @@ authRouter.get("/me", requireAuth, (request, response) => {
 authRouter.put(
   "/profile",
   requireAuth,
-  requireAllowedOrigin,
   requireCsrf,
   async (request, response) => {
     const input = profileSchema.parse(request.body);
@@ -211,7 +207,6 @@ authRouter.put(
 authRouter.post(
   "/change-password",
   requireAuth,
-  requireAllowedOrigin,
   requireCsrf,
   async (request, response) => {
     const input = changePasswordSchema.parse(request.body);
@@ -253,7 +248,6 @@ authRouter.post(
 
 authRouter.post(
   "/forgot-password",
-  requireAllowedOrigin,
   requireCsrf,
   mysqlRateLimit({ scope: "auth-forgot", max: 5, windowMs: 30 * 60_000 }),
   async (request, response) => {
@@ -295,7 +289,6 @@ authRouter.post(
 
 authRouter.post(
   "/reset-password",
-  requireAllowedOrigin,
   requireCsrf,
   mysqlRateLimit({ scope: "auth-reset", max: 8, windowMs: 30 * 60_000 }),
   async (request, response) => {

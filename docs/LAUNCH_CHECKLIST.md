@@ -29,7 +29,7 @@ Do not launch until each applicable item has an owner and evidence.
 
 - [ ] Create the first Super Admin interactively, create named staff with minimum
       roles, and verify the last-Super-Admin guard.
-- [ ] Confirm production cookie Secure/HttpOnly behavior, allowed origins, CSP,
+- [ ] Confirm production cookie Secure/HttpOnly behavior, same-origin API proxying, CSP,
       login/upload/enquiry rate limits and admin noindex headers.
 - [ ] Send a test enquiry and password reset through the production SMTP worker;
       verify queued, delivered, failed and retry states without duplicate leads.

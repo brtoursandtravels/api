@@ -7,7 +7,7 @@ import { ZodError } from "zod";
 
 Object.assign(process.env, {
   NODE_ENV: "test", DATABASE_URL: "mysql://test:test@127.0.0.1:1/staff_tests",
-  PUBLIC_SITE_URL: "http://localhost", CORS_ALLOWED_ORIGINS: "http://localhost",
+  PUBLIC_SITE_URL: "http://localhost",
   SESSION_SECRET: "staff-test-only-".repeat(8), SMTP_HOST: "localhost",
   SMTP_PORT: "1025", SMTP_FROM: "test@example.com",
 });

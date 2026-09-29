@@ -10,7 +10,6 @@ Object.assign(process.env, {
   NODE_ENV: "test",
   DATABASE_URL: "mysql://test:test@127.0.0.1:1/media_tests",
   PUBLIC_SITE_URL: "http://localhost",
-  CORS_ALLOWED_ORIGINS: "http://localhost",
   SESSION_SECRET: "media-test-only-".repeat(8),
   MEDIA_ROOT: path.resolve("public/media"),
   MEDIA_PUBLIC_BASE_URL: "/media",

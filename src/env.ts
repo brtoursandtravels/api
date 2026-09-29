@@ -22,7 +22,6 @@ const envSchema = z
       .max(100)
       .default(10),
     PUBLIC_SITE_URL: z.string().url(),
-    CORS_ALLOWED_ORIGINS: z.string().min(1),
     SESSION_SECRET: z.string().min(64),
     SESSION_COOKIE_NAME: z.string().min(1).max(100).default("br_admin_session"),
     SESSION_TTL_HOURS: z.coerce.number().int().min(1).max(168).default(12),
@@ -91,9 +90,4 @@ if (!parsed.success) {
   throw new Error("API environment validation failed.");
 }
 
-export const env = {
-  ...parsed.data,
-  CORS_ALLOWED_ORIGINS: parsed.data.CORS_ALLOWED_ORIGINS.split(",")
-    .map((origin) => origin.trim())
-    .filter(Boolean),
-};
+export const env = parsed.data;

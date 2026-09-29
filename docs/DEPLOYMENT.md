@@ -27,7 +27,7 @@ Store production secrets outside Git. The examples below use:
 ```
 
 Make these files readable only by the deployment account. The API environment
-must provide the database, session, origin, media and SMTP values validated by
+must provide the database, session, public-site URL, media and SMTP values validated by
 `src/env.ts`. Demo mode and demo seeding default to false and may be omitted.
 Set `NODE_ENV=production` in the host service environment so production cookie
 and security settings are enabled.

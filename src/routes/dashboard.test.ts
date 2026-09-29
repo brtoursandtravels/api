@@ -5,7 +5,7 @@ import express, { type ErrorRequestHandler } from "express";
 
 Object.assign(process.env, {
   NODE_ENV: "test", DATABASE_URL: "mysql://test:test@127.0.0.1:1/dashboard_tests",
-  PUBLIC_SITE_URL: "http://localhost", CORS_ALLOWED_ORIGINS: "http://localhost",
+  PUBLIC_SITE_URL: "http://localhost",
   SESSION_SECRET: "dashboard-test-only-".repeat(8), SESSION_COOKIE_NAME: "br_admin_session",
   SMTP_HOST: "localhost", SMTP_PORT: "1025", SMTP_FROM: "test@example.com",
 });

@@ -3,7 +3,7 @@
 ## API folder
 
 `.env` is local and ignored. It owns `DATABASE_URL`, MySQL bootstrap values, API
-port, allowed origins, session settings, media path, SMTP settings and worker
+port, session settings, media path, SMTP settings and worker
 polling. `NODE_ENV` defaults to development locally; `DEMO_MODE` and
 `ALLOW_DEMO_SEED` default to false when omitted.
 

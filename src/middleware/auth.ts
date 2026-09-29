@@ -99,25 +99,6 @@ export function requireRole(...roles: AdminRole[]): RequestHandler {
   };
 }
 
-export const requireAllowedOrigin: RequestHandler = (
-  request,
-  _response,
-  next,
-) => {
-  const origin = request.header("origin");
-  if (origin && !env.CORS_ALLOWED_ORIGINS.includes(origin)) {
-    next(
-      new HttpError(
-        403,
-        "ORIGIN_NOT_ALLOWED",
-        "The request origin is not allowed.",
-      ),
-    );
-    return;
-  }
-  next();
-};
-
 export const requireCsrf: RequestHandler = (request, _response, next) => {
   const token = request.header("x-csrf-token") ?? "";
   const valid = request.auth

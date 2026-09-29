@@ -5,7 +5,6 @@ config({ path: ".env" });
 const required = [
   "DATABASE_URL",
   "PUBLIC_SITE_URL",
-  "CORS_ALLOWED_ORIGINS",
   "SESSION_SECRET",
   "SMTP_HOST",
   "SMTP_FROM",

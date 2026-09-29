@@ -1,6 +1,5 @@
 import { randomUUID } from "node:crypto";
 import { createRequire } from "node:module";
-import cors from "cors";
 import express, { type ErrorRequestHandler } from "express";
 import { contentSecurityPolicy, type HelmetOptions } from "helmet";
 import multer from "multer";
@@ -61,23 +60,6 @@ app.use(
         ...contentSecurityPolicy.getDefaultDirectives(),
         "upgrade-insecure-requests": env.NODE_ENV === "production" ? [] : null,
       },
-    },
-  }),
-);
-app.use(
-  cors({
-    credentials: true,
-    origin(origin, callback) {
-      if (!origin || env.CORS_ALLOWED_ORIGINS.includes(origin))
-        callback(null, true);
-      else
-        callback(
-          new HttpError(
-            403,
-            "ORIGIN_NOT_ALLOWED",
-            "The request origin is not allowed.",
-          ),
-        );
     },
   }),
 );

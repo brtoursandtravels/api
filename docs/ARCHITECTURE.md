@@ -88,7 +88,7 @@ affected sessions.
 
 CSRF tokens are HMAC-authenticated. A short-lived pre-auth token protects login
 and reset requests; authenticated mutations require a token bound to the server
-session ID. Allowed-origin validation is additional protection. Durable rate
+session ID. Browser calls use same-origin API proxies. Durable rate
 limit buckets live in MySQL so counters are shared across API instances.
 
 Reset tokens are random, HMAC-hashed at rest, expiring and single use. Forgot
